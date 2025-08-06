@@ -21,7 +21,7 @@ export async function register(req, res) {
   const hash = await bcrypt.hash(password, 12);
   const [user] = await db('users')
     .insert({ first_name, last_name, email, password_hash: hash })
-    .returning(['user_id', 'first_name', 'last_name', 'email', 'role']);
+    .returning(['user_id','first_name','last_name','email','role']);
   res.status(201).json(user);
 }
 
@@ -42,10 +42,36 @@ export async function login(req, res) {
   if (user.status !== 'active') {
     return res.status(403).json({ error: 'Account not activated' });
   }
+
+  // Create JWT
   const token = jwt.sign(
     { sub: user.user_id, role: user.role },
     JWT_SECRET,
     { expiresIn: '2h' }
   );
-  res.json({ token });
+
+  // Send it as an HTTP-only, same-site cookie
+  res
+    .cookie('token', token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 2 * 60 * 60 * 1000, // 2 hours
+      path: '/'                   // available to all routes
+    })
+    .status(200)
+    .json({ message: 'Logged in' });
+}
+
+// Log out the current user
+export function logout(req, res) {
+  res
+    .clearCookie('token', {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      path: '/'    // must match the path used when setting the cookie
+    })
+    .status(200)
+    .json({ message: 'Logged out' });
 }

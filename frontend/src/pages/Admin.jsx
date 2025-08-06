@@ -5,55 +5,48 @@ import React, { useEffect, useState } from 'react';
 export default function Admin() {
   const [users, setUsers] = useState([]);
   const [error, setError] = useState(null);
-  const token = localStorage.getItem('token');
 
-  // Fetch users on load
+  // Fetch users on load — sends HTTP-only cookie
   useEffect(() => {
-    fetch('http://localhost:3000/api/admin/users', {
-      headers: { Authorization: `Bearer ${token}` }
-    })
+    fetch('/api/admin/users', { credentials: 'include' })
       .then(res => {
         if (!res.ok) throw new Error(`Error fetching users: ${res.status}`);
         return res.json();
       })
       .then(setUsers)
       .catch(err => setError(err.toString()));
-  }, [token]);
+  }, []);
 
   // Change user role
   const changeRole = (userId, newRole) => {
-    fetch(`http://localhost:3000/api/admin/users/${userId}/role`, {
+    fetch(`/api/admin/users/${userId}/role`, {
       method: 'PATCH',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`
-      },
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ role: newRole })
     })
       .then(res => {
         if (!res.ok) throw new Error('Failed to update role');
-        setUsers(us =>
-          us.map(u => (u.user_id === userId ? { ...u, role: newRole } : u))
-        );
+        setUsers(us => us.map(u =>
+          u.user_id === userId ? { ...u, role: newRole } : u
+        ));
       })
       .catch(err => setError(err.toString()));
   };
 
-  // Change user status (e.g., activate)
+  // Change user status (activate/disable)
   const changeStatus = (userId, newStatus) => {
-    fetch(`http://localhost:3000/api/admin/users/${userId}/status`, {
+    fetch(`/api/admin/users/${userId}/status`, {
       method: 'PATCH',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`
-      },
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ status: newStatus })
     })
       .then(res => {
         if (!res.ok) throw new Error('Failed to update status');
-        setUsers(us =>
-          us.map(u => (u.user_id === userId ? { ...u, status: newStatus } : u))
-        );
+        setUsers(us => us.map(u =>
+          u.user_id === userId ? { ...u, status: newStatus } : u
+        ));
       })
       .catch(err => setError(err.toString()));
   };
@@ -92,7 +85,7 @@ export default function Admin() {
               <td>{u.first_name} {u.last_name}</td>
               <td>{u.email}</td>
               <td>
-                {u.status === 'pending' ? (
+                {(u.status === 'pending' || u.status === 'disabled') ? (
                   <button onClick={() => changeStatus(u.user_id, 'active')}>
                     Activate
                   </button>
@@ -100,13 +93,7 @@ export default function Admin() {
                   <button onClick={() => changeStatus(u.user_id, 'disabled')}>
                     Disable
                   </button>
-                ) : u.status === 'disabled' ? (
-                  // Allow re-activation of disabled users
-                  <button onClick={() => changeStatus(u.user_id, 'active')}>
-                    Activate
-                  </button>
                 ) : (
-                  // Fallback for any other status
                   u.status
                 )}
               </td>
