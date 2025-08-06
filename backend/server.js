@@ -7,8 +7,8 @@ import cors from 'cors';
 import rateLimit from 'express-rate-limit';
 
 import authRoutes from './routes/authRoutes.js';
-import { authenticate, requireRole } from './middleware/authMiddleware.js'; // ← these two
 import adminRoutes from './routes/adminRoutes.js';
+import { authenticate, requireRole } from './middleware/authMiddleware.js';
 
 dotenv.config();
 

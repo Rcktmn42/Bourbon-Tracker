@@ -1,2 +1,4 @@
 # local env vars
 .env
+*.sqlite3
+*.db

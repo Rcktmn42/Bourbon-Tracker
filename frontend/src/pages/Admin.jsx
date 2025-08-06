@@ -96,7 +96,17 @@ export default function Admin() {
                   <button onClick={() => changeStatus(u.user_id, 'active')}>
                     Activate
                   </button>
+                ) : u.status === 'active' ? (
+                  <button onClick={() => changeStatus(u.user_id, 'disabled')}>
+                    Disable
+                  </button>
+                ) : u.status === 'disabled' ? (
+                  // Allow re-activation of disabled users
+                  <button onClick={() => changeStatus(u.user_id, 'active')}>
+                    Activate
+                  </button>
                 ) : (
+                  // Fallback for any other status
                   u.status
                 )}
               </td>
