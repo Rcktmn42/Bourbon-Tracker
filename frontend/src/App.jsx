@@ -1,20 +1,20 @@
 // frontend/src/App.jsx
 
 import React, { useEffect, useState } from 'react';
-import './App.css';
 import {
   BrowserRouter,
   Routes,
   Route,
   Link,
-  useNavigate,
-  Navigate
+  useNavigate
 } from 'react-router-dom';
-import { AuthProvider, useAuth } from './contexts/AuthContext.jsx';
+import { useAuth } from './contexts/AuthContext.jsx';
 import ProtectedRoute from './components/ProtectedRoute.jsx';
 import Login from './pages/Login.jsx';
 import Register from './pages/Register.jsx';
 import Admin from './pages/Admin.jsx';
+import Home from './pages/Home.jsx';     // ← import the new Home component
+import './App.css';                      // your global styles
 
 function Layout({ children }) {
   const navigate = useNavigate();
@@ -31,53 +31,36 @@ function Layout({ children }) {
 
   return (
     <>
-      <header style={{ padding: '1rem', background: '#f0e6d2' }}>
-        <nav style={{ display: 'flex', gap: '1rem' }}>
-          {/* Only show Home link if user is logged in */}
-          {user && <Link to="/">Home</Link>}
-
-          {!user ? (
-            <>
-              <Link to="/login">Login</Link>
-              <Link to="/register">Register</Link>
-            </>
-          ) : (
-            <button className="nav-button" onClick={handleLogout}>
-              Logout
-            </button>
-          )}
-
-          {user && (user.role === 'admin' || user.role === 'power_user') && (
-            <Link to="/admin">Admin</Link>
-          )}
+      <header className="main-header">
+        <nav className="main-nav">
+          <div className="nav-left">
+            {/* Only show Home link if user is logged in */}
+            {user && <Link to="/">Home</Link>}
+            {user && (user.role === 'admin' || user.role === 'power_user') && (
+              <Link to="/admin">Admin</Link>
+            )}
+          </div>
+          <div className="nav-right">
+            {!user ? (
+              <>
+                <Link to="/login">Login</Link>
+                <Link to="/register">Register</Link>
+              </>
+            ) : (
+              <button className="nav-button" onClick={handleLogout}>
+                Logout
+              </button>
+            )}
+          </div>
         </nav>
       </header>
 
-      <main style={{ padding: '2rem' }}>{children}</main>
+      <main className="main-content">{children}</main>
     </>
   );
 }
 
-// Component to handle role-based redirects
-function RoleBasedRedirect({ children, requiredRoles = [] }) {
-  const { user, loading } = useAuth();
-
-  if (loading) {
-    return <p>Loading...</p>;
-  }
-
-  if (!user) {
-    return <Navigate to="/login" replace />;
-  }
-
-  if (requiredRoles.length > 0 && !requiredRoles.includes(user.role)) {
-    return <Navigate to="/" replace />;
-  }
-
-  return children;
-}
-
-function AppContent() {
+export default function App() {
   const [status, setStatus] = useState('Loading…');
 
   useEffect(() => {
@@ -88,47 +71,27 @@ function AppContent() {
   }, []);
 
   return (
-    <Layout>
-      <Routes>
-        {/* Home / Health-check */}
-        <Route
-          path="/"
-          element={
-            <div style={{ textAlign: 'center' }}>
-              <h1>Bourbon Tracker POC</h1>
-              <p>
-                Backend health: <strong>{status}</strong>
-              </p>
-            </div>
-          }
-        />
-
-        {/* Login */}
-        <Route path="/login" element={<Login />} />
-
-        {/* Register */}
-        <Route path="/register" element={<Register />} />
-
-        {/* Admin (protected with role-based access) */}
-        <Route
-          path="/admin"
-          element={
-            <RoleBasedRedirect requiredRoles={['admin', 'power_user']}>
-              <Admin />
-            </RoleBasedRedirect>
-          }
-        />
-      </Routes>
-    </Layout>
-  );
-}
-
-export default function App() {
-  return (
     <BrowserRouter>
-      <AuthProvider>
-        <AppContent />
-      </AuthProvider>
+      <Layout>
+        <Routes>
+          {/* Home page */}
+          <Route path="/" element={<Home status={status} />} />
+
+          {/* Authentication */}
+          <Route path="/login" element={<Login />} />
+          <Route path="/register" element={<Register />} />
+
+          {/* Admin (protected) */}
+          <Route
+            path="/admin"
+            element={
+              <ProtectedRoute requiredRoles={['admin', 'power_user']}>
+                <Admin />
+              </ProtectedRoute>
+            }
+          />
+        </Routes>
+      </Layout>
     </BrowserRouter>
   );
 }

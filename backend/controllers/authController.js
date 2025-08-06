@@ -10,7 +10,8 @@ const JWT_SECRET = process.env.JWT_SECRET;
 
 // Register a new user
 export async function register(req, res) {
-  const { first_name, last_name, email, password } = req.body;
+  let { first_name, last_name, email, password } = req.body;
+  email = email.trim().toLowerCase();                   // ← normalize
   if (!first_name || !last_name || !email || !password) {
     return res.status(400).json({ error: 'All fields are required' });
   }
@@ -27,7 +28,8 @@ export async function register(req, res) {
 
 // Log in an existing user
 export async function login(req, res) {
-  const { email, password } = req.body;
+  let { email, password } = req.body;
+  email = email.trim().toLowerCase();                   // ← normalize
   if (!email || !password) {
     return res.status(400).json({ error: 'Email and password required' });
   }

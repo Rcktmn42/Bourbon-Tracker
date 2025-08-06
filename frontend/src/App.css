@@ -1,8 +1,55 @@
+/* App.css */
+
+/* Reset any body/html backgrounds that might interfere */
+body, html {
+  margin: 0;
+  padding: 0;
+  background: none;
+}
+
+/* Fixed header at the top */
+.main-header {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  background: #f0e6d2;
+  padding: 1rem;
+  box-sizing: border-box;
+  z-index: 100;
+}
+
+/* Flex nav with space between left & right */
+.main-nav {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.nav-left,
+.nav-right {
+  display: flex;
+  gap: 1rem;
+}
+
+/* Push page content below the header */
+.main-content {
+  padding-top: 4rem; /* adjust if your header is taller */
+  /* Remove any backgrounds that could interfere */
+  background: none;
+  /* Ensure full width and height for page backgrounds */
+  width: 100vw;
+  min-height: calc(100vh - 4rem);
+  margin-left: calc(-50vw + 50%); /* Break out of container constraints */
+}
+
 #root {
-  max-width: 1280px;
+  max-width: 1280px; /* Restore original container width for content */
   margin: 0 auto;
   padding: 2rem;
   text-align: center;
+  background: none; /* Ensure no background here */
+  position: relative;
 }
 
 .logo {

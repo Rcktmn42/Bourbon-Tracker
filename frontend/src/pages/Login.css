@@ -1,0 +1,76 @@
+/* Login.css */
+
+/* Full‐viewport background for Login */
+.login-page {
+  min-height: calc(100vh - 4rem);      /* account for header height */
+  width: 100vw;
+  background: url('/images/login-bg.jpg') center/cover no-repeat;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  position: relative;
+  z-index: 1;
+  margin-left: calc(-50vw + 50%);      /* break out of container */
+}
+
+/* White card container (over the background) */
+.login-form {
+  background-color: rgba(255, 255, 255, 0.9);
+  padding: 2.5rem 2rem;
+  border-radius: 1rem;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  width: 100%;
+  max-width: 400px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+/* Header */
+.login-form h2 {
+  margin-bottom: 1.5rem;
+  color: #3D2B1F;
+  text-align: center;
+}
+
+/* Labels */
+.login-form label {
+  align-self: flex-start;
+  margin-bottom: 0.25rem;
+  font-weight: bold;
+  color: #5A3E1B;
+}
+
+/* Inputs */
+.login-input {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  border: 1px solid #D3B8AE;
+  border-radius: 0.5rem;
+  margin-bottom: 1.25rem;
+  font-size: 1rem;
+}
+
+/* Button */
+.login-button {
+  width: 100%;
+  padding: 0.75rem;
+  background-color: #264653;
+  color: white;
+  border: none;
+  border-radius: 0.75rem;
+  font-size: 1.125rem;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+.login-button:hover {
+  background-color: #1B3642;
+}
+
+/* Error message */
+.login-error {
+  align-self: flex-start;
+  color: red;
+  margin-bottom: 1rem;
+}

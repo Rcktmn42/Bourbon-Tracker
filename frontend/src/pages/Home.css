@@ -1,0 +1,27 @@
+/* Home.css */
+
+/* Full‐viewport background for Home */
+.home-page {
+  min-height: calc(100vh - 4rem); /* subtract header height */
+  width: 100vw;
+  background: url('/images/home-bg.jpg') center/cover no-repeat;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  /* Ensure this background covers any underlying backgrounds */
+  position: relative;
+  z-index: 1;
+  /* Break out of container to use full width */
+  margin-left: calc(-50vw + 50%);
+}
+
+/* White card in the center */
+.home-container {
+  background: rgba(255, 255, 255, 0.9);
+  padding: 2rem;
+  border-radius: 0.5rem;
+  text-align: center;
+  max-width: 600px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}

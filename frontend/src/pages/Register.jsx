@@ -1,6 +1,6 @@
 // frontend/src/pages/Register.jsx
 
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 export default function Register() {
@@ -15,25 +15,37 @@ export default function Register() {
   const navigate = useNavigate();
 
   const handleChange = e => {
-    setForm(f => ({ ...f, [e.target.name]: e.target.value }));
+    const { name, value } = e.target;
+    setForm(f => ({
+      ...f,
+      [name]: value
+    }));
   };
 
   const handleSubmit = async e => {
     e.preventDefault();
     setError('');
     setSuccess('');
+
+    // Normalize email to lower-case before sending
+    const payload = {
+      first_name: form.first_name.trim(),
+      last_name: form.last_name.trim(),
+      email: form.email.trim().toLowerCase(),
+      password: form.password
+    };
+
     try {
       const res = await fetch('/api/auth/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(form)
+        body: JSON.stringify(payload)
       });
       if (!res.ok) {
-        const { error } = await res.json();
-        throw new Error(error || 'Registration failed');
+        const { error: msg } = await res.json().catch(() => ({}));
+        throw new Error(msg || 'Registration failed');
       }
       setSuccess('Registration successful! Please log in.');
-      // Optionally redirect to login after a delay:
       setTimeout(() => navigate('/login'), 2000);
     } catch (err) {
       setError(err.message);

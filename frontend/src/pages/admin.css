@@ -1,0 +1,58 @@
+/* frontend/src/pages/Admin.css */
+
+/* Full-screen background */
+.admin-page {
+  padding: 2rem;
+  min-height: calc(100vh - 4rem);
+  width: 100vw;
+  background: url('/images/admin-bg.jpg') center/cover no-repeat;
+  box-sizing: border-box;
+  /* Ensure this background covers any underlying backgrounds */
+  position: relative;
+  z-index: 1;
+  /* Break out of container to use full width */
+  margin-left: calc(-50vw + 50%);
+}
+
+.admin-container {
+  background: rgba(255, 255, 255, 0.95);
+  padding: 2rem;
+  border-radius: 0.5rem;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+/* Table spacing so each row is isolated */
+.user-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0 1rem; /* vertical gap between rows */
+}
+
+/* Header row styling */
+.user-table thead th {
+  padding: 0.75rem 1rem;
+  background: rgba(255, 255, 255, 0.8);
+  color: #3D2B1F;
+  text-align: left;
+  border-bottom: 2px solid #8C6B3D; /* thick line under headers */
+}
+
+/* Each user in its own "box" */
+.user-table tbody tr {
+  display: table-row;
+  background-color: #F6E0C4; /* cream background */
+  border: 3px solid #8C6B3D;  /* thick outer border */
+  border-radius: 0.5rem;
+  overflow: hidden;
+}
+
+/* Cells: padding + thin dividers */
+.user-table tbody td {
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid #ccc; /* thin horizontal line under each cell */
+}
+
+/* Vertical lines between cells */
+.user-table tbody td:not(:last-child) {
+  border-right: 1px solid #ccc;
+}
