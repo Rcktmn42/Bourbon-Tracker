@@ -75,7 +75,14 @@ export default function App() {
       <Layout>
         <Routes>
           {/* Home page */}
-          <Route path="/" element={<Home status={status} />} />
+          <Route 
+            path="/" 
+            element={
+              <ProtectedRoute>
+                <Home status={status} />
+              </ProtectedRoute>
+            } 
+          />
 
           {/* Authentication */}
           <Route path="/login" element={<Login />} />
