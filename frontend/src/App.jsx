@@ -6,17 +6,19 @@ import {
   Routes,
   Route,
   Link,
-  useNavigate
+  useNavigate,
+  Navigate
 } from 'react-router-dom';
 import { useAuth } from './contexts/AuthContext.jsx';
-import ProtectedRoute from './components/ProtectedRoute.jsx';
+import PublicLayout from './components/PublicLayout.jsx';
 import Login from './pages/Login.jsx';
 import Register from './pages/Register.jsx';
 import Admin from './pages/Admin.jsx';
-import Home from './pages/Home.jsx';     // ← import the new Home component
-import './App.css';                      // your global styles
+import Home from './pages/Home.jsx';
+import './App.css';
 
-function Layout({ children }) {
+// Authenticated Layout - Full app experience
+function AuthenticatedLayout({ children }) {
   const navigate = useNavigate();
   const { user, loading, logout } = useAuth();
 
@@ -34,23 +36,18 @@ function Layout({ children }) {
       <header className="main-header">
         <nav className="main-nav">
           <div className="nav-left">
-            {/* Only show Home link if user is logged in */}
-            {user && <Link to="/">Home</Link>}
+            <Link to="/">Home</Link>
             {user && (user.role === 'admin' || user.role === 'power_user') && (
               <Link to="/admin">Admin</Link>
             )}
           </div>
           <div className="nav-right">
-            {!user ? (
-              <>
-                <Link to="/login">Login</Link>
-                <Link to="/register">Register</Link>
-              </>
-            ) : (
-              <button className="nav-button" onClick={handleLogout}>
-                Logout
-              </button>
-            )}
+            <span style={{ marginRight: '1rem', color: '#5A3E1B' }}>
+              Welcome, {user?.first_name}!
+            </span>
+            <button className="nav-button" onClick={handleLogout}>
+              Logout
+            </button>
           </div>
         </nav>
       </header>
@@ -60,6 +57,7 @@ function Layout({ children }) {
   );
 }
 
+// Main App Component
 export default function App() {
   const [status, setStatus] = useState('Loading…');
 
@@ -72,33 +70,72 @@ export default function App() {
 
   return (
     <BrowserRouter>
-      <Layout>
-        <Routes>
-          {/* Home page */}
-          <Route 
-            path="/" 
-            element={
-              <ProtectedRoute>
-                <Home status={status} />
-              </ProtectedRoute>
-            } 
-          />
+      <AppContent status={status} />
+    </BrowserRouter>
+  );
+}
 
-          {/* Authentication */}
+// Separate component to use auth context inside Router
+function AppContent({ status }) {
+  const { user, loading } = useAuth();
+
+  // Show loading while checking authentication
+  if (loading) {
+    return (
+      <div style={{ 
+        display: 'flex', 
+        justifyContent: 'center', 
+        alignItems: 'center', 
+        height: '100vh',
+        fontSize: '1.2rem'
+      }}>
+        Loading...
+      </div>
+    );
+  }
+
+  // If user is not logged in, show public layout with only auth routes
+  if (!user) {
+    return (
+      <PublicLayout>
+        <Routes>
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
-
-          {/* Admin (protected) */}
-          <Route
-            path="/admin"
-            element={
-              <ProtectedRoute requiredRoles={['admin', 'power_user']}>
-                <Admin />
-              </ProtectedRoute>
-            }
-          />
+          {/* Redirect any other route to login */}
+          <Route path="*" element={<Navigate to="/login" replace />} />
         </Routes>
-      </Layout>
-    </BrowserRouter>
+      </PublicLayout>
+    );
+  }
+
+  // User is logged in, show authenticated layout with all app routes
+  return (
+    <AuthenticatedLayout>
+      <Routes>
+        {/* Protected routes - all automatically secured */}
+        <Route path="/" element={<Home status={status} />} />
+        
+        {/* Admin route with role checking */}
+        <Route 
+          path="/admin" 
+          element={
+            user.role === 'admin' || user.role === 'power_user' ? (
+              <Admin />
+            ) : (
+              <Navigate to="/" replace />
+            )
+          } 
+        />
+        
+        {/* Add future protected routes here - they're automatically secured! */}
+        
+        {/* Redirect auth routes to home if already logged in */}
+        <Route path="/login" element={<Navigate to="/" replace />} />
+        <Route path="/register" element={<Navigate to="/" replace />} />
+        
+        {/* Catch-all redirect to home */}
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+    </AuthenticatedLayout>
   );
 }

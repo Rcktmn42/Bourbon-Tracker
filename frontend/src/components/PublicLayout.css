@@ -1,0 +1,66 @@
+/* PublicLayout.css */
+
+/* Minimal header for public pages */
+.public-header {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  background: rgba(240, 230, 210, 0.95);
+  backdrop-filter: blur(10px);
+  padding: 1rem;
+  box-sizing: border-box;
+  z-index: 100;
+  border-bottom: 1px solid rgba(140, 107, 61, 0.3);
+}
+
+.public-nav {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.public-brand h1 {
+  margin: 0;
+  color: #3D2B1F;
+  font-size: 1.5rem;
+  font-weight: bold;
+}
+
+.public-auth-links {
+  display: flex;
+  gap: 1rem;
+}
+
+.public-link {
+  color: #264653;
+  text-decoration: none;
+  padding: 0.5rem 1rem;
+  border-radius: 0.25rem;
+  transition: background-color 0.2s ease;
+}
+
+.public-link:hover {
+  background-color: rgba(38, 70, 83, 0.1);
+  text-decoration: underline;
+}
+
+/* Main content area - allow full-width backgrounds */
+.public-main {
+  padding-top: 5rem; /* Space for fixed header */
+  min-height: 100vh;
+  width: 100vw;
+  margin: 0;
+  padding-left: 0;
+  padding-right: 0;
+  position: relative;
+  overflow-x: hidden; /* Prevent horizontal scroll from full-width elements */
+  margin-left: calc(-50vw + 50%); /* Break out of any container constraints for full-width backgrounds */
+}
+
+/* Reset any global styles that might interfere */
+.public-main * {
+  box-sizing: border-box;
+}

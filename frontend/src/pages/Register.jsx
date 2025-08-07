@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import './Register.css';
 
 export default function Register() {
   const [form, setForm] = useState({
@@ -12,6 +13,7 @@ export default function Register() {
   });
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
 
   const handleChange = e => {
@@ -26,6 +28,7 @@ export default function Register() {
     e.preventDefault();
     setError('');
     setSuccess('');
+    setIsLoading(true);
 
     // Normalize email to lower-case before sending
     const payload = {
@@ -45,63 +48,81 @@ export default function Register() {
         const { error: msg } = await res.json().catch(() => ({}));
         throw new Error(msg || 'Registration failed');
       }
-      setSuccess('Registration successful! Please log in.');
+      setSuccess('Registration successful! Redirecting to login...');
       setTimeout(() => navigate('/login'), 2000);
     } catch (err) {
       setError(err.message);
+    } finally {
+      setIsLoading(false);
     }
   };
 
   return (
-    <div style={{ maxWidth: 400, margin: '2rem auto' }}>
-      <h2>Register</h2>
-      <form onSubmit={handleSubmit}>
-        <div>
-          <label>First Name:</label><br/>
+    <div className="register-page">
+      <form className="register-form" onSubmit={handleSubmit}>
+        <h2>Create Account</h2>
+        
+        <div className="register-input-group">
+          <label htmlFor="first_name">First Name</label>
           <input
+            id="first_name"
             name="first_name"
+            type="text"
+            className="register-input"
             value={form.first_name}
             onChange={handleChange}
             required
           />
         </div>
-        <div style={{ marginTop: '1rem' }}>
-          <label>Last Name:</label><br/>
+
+        <div className="register-input-group">
+          <label htmlFor="last_name">Last Name</label>
           <input
+            id="last_name"
             name="last_name"
+            type="text"
+            className="register-input"
             value={form.last_name}
             onChange={handleChange}
             required
           />
         </div>
-        <div style={{ marginTop: '1rem' }}>
-          <label>Email:</label><br/>
+
+        <div className="register-input-group">
+          <label htmlFor="email">Email</label>
           <input
-            type="email"
+            id="email"
             name="email"
+            type="email"
+            className="register-input"
             value={form.email}
             onChange={handleChange}
             required
           />
         </div>
-        <div style={{ marginTop: '1rem' }}>
-          <label>Password:</label><br/>
+
+        <div className="register-input-group">
+          <label htmlFor="password">Password</label>
           <input
-            type="password"
+            id="password"
             name="password"
+            type="password"
+            className="register-input"
             value={form.password}
             onChange={handleChange}
             required
           />
         </div>
-        {error && (
-          <p style={{ color: 'red', marginTop: '1rem' }}>{error}</p>
-        )}
-        {success && (
-          <p style={{ color: 'green', marginTop: '1rem' }}>{success}</p>
-        )}
-        <button type="submit" style={{ marginTop: '1rem' }}>
-          Register
+
+        {error && <div className="register-error">{error}</div>}
+        {success && <div className="register-success">{success}</div>}
+
+        <button
+          type="submit"
+          className="register-button"
+          disabled={isLoading}
+        >
+          {isLoading ? 'Creating Account...' : 'Create Account'}
         </button>
       </form>
     </div>
