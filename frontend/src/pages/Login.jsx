@@ -1,5 +1,4 @@
 // frontend/src/pages/Login.jsx
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext.jsx';
@@ -14,7 +13,7 @@ export default function Login() {
   const navigate = useNavigate();
   const location = useLocation();
 
-  // Redirect if already logged in
+  // If already logged in, bounce away
   useEffect(() => {
     if (user) {
       const from = location.state?.from?.pathname || '/';
@@ -22,34 +21,50 @@ export default function Login() {
     }
   }, [user, navigate, location]);
 
-  const handleChange = e => {
-    setFormData(prev => ({ ...prev, [e.target.name]: e.target.value }));
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleSubmit = async e => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
     setIsLoading(true);
 
-    const result = await login({
-      email: formData.email.trim().toLowerCase(),
-      password: formData.password
-    });
+    try {
+      const payload = {
+        email: formData.email.trim().toLowerCase(),
+        password: formData.password,
+      };
 
-    if (!result.success) {
-      setError(result.error || 'Login failed');
+      // Expecting login() to return { success: boolean, error?: string }
+      const result = await login(payload);
+
+      if (!result?.success) {
+        setError(result?.error || 'Login failed. Please check your credentials.');
+        return;
+      }
+
+      // Success: force navigation right away (in case context propagation is delayed)
+      const from = location.state?.from?.pathname || '/';
+      navigate(from, { replace: true });
+
+    } catch (err) {
+      console.error('Login error:', err);
+      setError('Network or server error. Please try again.');
+    } finally {
       setIsLoading(false);
     }
-    // On success, user context updates and triggers redirect
   };
 
-  // Don’t render form while redirecting
+  // Avoid rendering the form when we know we're logged in
   if (user) return null;
 
   return (
     <div className="login-page">
-      <form className="login-form" onSubmit={handleSubmit}>
+      <form className="login-form" onSubmit={handleSubmit} noValidate>
         <h2>Login</h2>
+
         {error && <div className="login-error">{error}</div>}
 
         <label htmlFor="email">Email</label>
@@ -60,6 +75,7 @@ export default function Login() {
           className="login-input"
           value={formData.email}
           onChange={handleChange}
+          autoComplete="email"
           required
         />
 
@@ -71,6 +87,7 @@ export default function Login() {
           className="login-input"
           value={formData.password}
           onChange={handleChange}
+          autoComplete="current-password"
           required
         />
 
@@ -78,6 +95,7 @@ export default function Login() {
           type="submit"
           className="login-button"
           disabled={isLoading}
+          aria-busy={isLoading ? 'true' : 'false'}
         >
           {isLoading ? 'Logging in…' : 'Log In'}
         </button>

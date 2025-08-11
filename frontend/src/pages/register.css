@@ -115,3 +115,67 @@
   width: 100%;
   box-sizing: border-box;
 }
+
+/* Password toggle styles */
+.register-password-field {
+  position: relative;
+  width: 100%;
+  display: flex;
+  align-items: center;
+}
+
+.register-toggle-button {
+  position: absolute;
+  right: 1rem;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  font-size: 1.15rem;
+  color: #5A3E1B;
+  padding: 0 0.2rem;
+  z-index: 2;
+}
+
+.register-toggle-button:focus {
+  outline: 2px solid #264653;
+}
+
+/* Optional: reduce gap under password fields */
+.password-toggle-group {
+  margin-bottom: 1rem;
+}
+/* Password checklist and feedback */
+.password-checklist {
+  margin: 0.5rem 0 0.2rem 0;
+  padding-left: 1.2em;
+  font-size: 0.98rem;
+  color: #333;
+  list-style: none;
+}
+.password-checklist li {
+  margin-bottom: 2px;
+}
+.password-checklist .met {
+  color: #2D5A27;
+}
+.password-checklist .unmet {
+  color: #B91C1C;
+}
+
+.password-match {
+  font-size: 0.98rem;
+  margin-top: 0.15rem;
+}
+.password-match.met {
+  color: #2D5A27;
+}
+.password-match.unmet {
+  color: #B91C1C;
+}
+
+.password-strong-hint {
+  color: #2D5A27;
+  margin-top: 0.3rem;
+  font-weight: 600;
+  text-align: center;
+}

@@ -1,7 +1,7 @@
 // frontend/src/pages/Admin.jsx
 
 import React, { useEffect, useState } from 'react';
-import './Admin.css';
+import './admin.css';
 
 export default function Admin() {
   const [users, setUsers] = useState([]);

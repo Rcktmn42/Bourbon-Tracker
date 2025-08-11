@@ -1,117 +1,86 @@
 // frontend/src/contexts/AuthContext.jsx
 
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 
 const AuthContext = createContext();
 
 export const useAuth = () => {
-  const context = useContext(AuthContext);
-  if (!context) {
-    throw new Error('useAuth must be used within an AuthProvider');
-  }
-  return context;
+  const ctx = useContext(AuthContext);
+  if (!ctx) throw new Error('useAuth must be used within an AuthProvider');
+  return ctx;
 };
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // Debug: log when user state changes
-  useEffect(() => {
-    console.log('User state changed:', user);
-  }, [user]);
-
-  // Function to check current authentication status
-  const checkAuth = async () => {
+  const checkAuth = useCallback(async () => {
     try {
-      console.log('Checking auth status...'); // Debug log
-      const response = await fetch('/api/whoami', { credentials: 'include' });
-      if (response.ok) {
-        const data = await response.json();
-        console.log('Auth check successful:', data.user); // Debug log
-        setUser(data.user);
-        return data.user;
-      } else {
-        console.log('Auth check failed'); // Debug log
+      const response = await fetch('/api/auth/whoami', { credentials: 'include' });
+      if (!response.ok) {
         setUser(null);
         return null;
       }
-    } catch (error) {
-      console.error('Auth check failed:', error);
+      // Backend returns the user object directly, not { user: ... }
+      const data = await response.json();
+      setUser(data);
+      return data;
+    } catch (err) {
+      console.error('checkAuth error:', err);
       setUser(null);
       return null;
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
-  // Function to handle login
-  const login = async (credentials) => {
+  const login = useCallback(async (credentials) => {
     try {
       const response = await fetch('/api/auth/login', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify(credentials),
-        credentials: 'include'
       });
 
-      if (response.ok) {
-        const data = await response.json();
-        console.log('Login response:', data); // Debug log
-        
-        // If login API doesn't return user data, fetch it separately
-        if (data.user) {
-          console.log('Setting user from login response:', data.user);
-          setUser(data.user);
-          return { success: true, user: data.user };
-        } else {
-          // Login succeeded but no user data, fetch it
-          console.log('Login succeeded, fetching user data...');
-          await checkAuth();
-          return { success: true };
+      if (!response.ok) {
+        let errText = 'Login failed';
+        try {
+          const errJson = await response.json();
+          // Backend uses { error: "..." }, not { message: "..." }
+          errText = errJson.error || errJson.message || errText;
+        } catch {
+          /* ignore JSON parse errors */
         }
-      } else {
-        const errorData = await response.json();
-        return { success: false, error: errorData.message || 'Login failed' };
+        return { success: false, error: errText };
       }
-    } catch (error) {
-      console.error('Login error:', error);
+
+      // Successful login sets the cookie; now fetch the user
+      const who = await checkAuth();
+      if (who) return { success: true, user: who };
+      // If we got here, cookie set but whoami failed—surface a helpful message
+      return { success: false, error: 'Logged in, but could not load user profile.' };
+    } catch (err) {
+      console.error('login error:', err);
       return { success: false, error: 'Network error' };
     }
-  };
+  }, [checkAuth]);
 
-  // Function to handle logout
-  const logout = async () => {
+  const logout = useCallback(async () => {
     try {
-      await fetch('/api/auth/logout', {
-        method: 'POST',
-        credentials: 'include'
-      });
-    } catch (error) {
-      console.error('Logout error:', error);
+      await fetch('/api/auth/logout', { method: 'POST', credentials: 'include' });
+    } catch (err) {
+      console.error('logout error:', err);
+    } finally {
+      setUser(null);
     }
-    setUser(null);
-  };
-
-  // Check auth status on mount
-  useEffect(() => {
-    checkAuth();
   }, []);
 
-  const value = {
-    user,
-    loading,
-    login,
-    logout,
-    checkAuth,
-    refreshAuth: checkAuth // Alias for forcing auth refresh
-  };
+  useEffect(() => {
+    checkAuth();
+  }, [checkAuth]);
 
-  return (
-    <AuthContext.Provider value={value}>
-      {children}
-    </AuthContext.Provider>
-  );
+  const value = { user, loading, login, logout, checkAuth, refreshAuth: checkAuth };
+
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };

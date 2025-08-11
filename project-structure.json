@@ -1,0 +1,601 @@
+{
+  "project_name": "NC Bourbon Tracker",
+  "generated_at": "2025-08-10T14:17:31.075226",
+  "root_path": "C:\\Users\\JTLew\\source\\repos\\Bourbon-Tracker",
+  "architecture": {
+    "type": "Full Stack Web Application",
+    "frontend": "React + Vite",
+    "backend": "Node.js + Express",
+    "database": "SQLite",
+    "auth": "JWT with HTTP-only cookies",
+    "security": "Secure by default architecture"
+  },
+  "directory_structure": {
+    "root": {
+      "files": [
+        {
+          "name": ".env.example",
+          "path": ".env.example",
+          "size": 0,
+          "important": false,
+          "type": ".example"
+        },
+        {
+          "name": ".gitignore",
+          "path": ".gitignore",
+          "size": 41,
+          "important": true,
+          "type": "no_extension"
+        },
+        {
+          "name": "docker-compose.yml",
+          "path": "docker-compose.yml",
+          "size": 0,
+          "important": true,
+          "type": ".yml"
+        },
+        {
+          "name": "document_project.py",
+          "path": "document_project.py",
+          "size": 19934,
+          "important": true,
+          "type": ".py"
+        },
+        {
+          "name": "favicon.ico",
+          "path": "favicon.ico",
+          "size": 15406,
+          "important": false,
+          "type": ".ico"
+        },
+        {
+          "name": "README.md",
+          "path": "README.md",
+          "size": 0,
+          "important": true,
+          "type": ".md"
+        },
+        {
+          "name": "Solution Blueprint.docx",
+          "path": "Solution Blueprint.docx",
+          "size": 19718,
+          "important": false,
+          "type": ".docx"
+        }
+      ],
+      "purpose": "Project files"
+    },
+    "backend": {
+      "files": [
+        {
+          "name": ".env",
+          "path": "backend\\.env",
+          "size": 191,
+          "important": false,
+          "type": "no_extension"
+        },
+        {
+          "name": "knexfile.js",
+          "path": "backend\\knexfile.js",
+          "size": 1271,
+          "important": true,
+          "type": ".js"
+        },
+        {
+          "name": "package-lock.json",
+          "path": "backend\\package-lock.json",
+          "size": 100162,
+          "important": true,
+          "type": ".json"
+        },
+        {
+          "name": "package.json",
+          "path": "backend\\package.json",
+          "size": 784,
+          "important": true,
+          "type": ".json"
+        },
+        {
+          "name": "server.js",
+          "path": "backend\\server.js",
+          "size": 1689,
+          "important": true,
+          "type": ".js"
+        }
+      ],
+      "purpose": "Node.js backend server"
+    },
+    "backend\\config": {
+      "files": [
+        {
+          "name": "db.js",
+          "path": "backend\\config\\db.js",
+          "size": 506,
+          "important": true,
+          "type": ".js"
+        }
+      ],
+      "purpose": "Project files"
+    },
+    "backend\\controllers": {
+      "files": [
+        {
+          "name": "adminController.js",
+          "path": "backend\\controllers\\adminController.js",
+          "size": 1442,
+          "important": true,
+          "type": ".js"
+        },
+        {
+          "name": "authController.js",
+          "path": "backend\\controllers\\authController.js",
+          "size": 6265,
+          "important": true,
+          "type": ".js"
+        },
+        {
+          "name": "userController.js",
+          "path": "backend\\controllers\\userController.js",
+          "size": 3222,
+          "important": true,
+          "type": ".js"
+        }
+      ],
+      "purpose": "Project files"
+    },
+    "backend\\data": {
+      "files": [
+        {
+          "name": "database.sqlite3",
+          "path": "backend\\data\\database.sqlite3",
+          "size": 106496,
+          "important": false,
+          "type": ".sqlite3"
+        }
+      ],
+      "purpose": "Project files"
+    },
+    "backend\\middleware": {
+      "files": [
+        {
+          "name": "authMiddleware.js",
+          "path": "backend\\middleware\\authMiddleware.js",
+          "size": 743,
+          "important": true,
+          "type": ".js"
+        }
+      ],
+      "purpose": "Project files"
+    },
+    "backend\\migrations": {
+      "files": [
+        {
+          "name": "20250802013046_create_users_table.js",
+          "path": "backend\\migrations\\20250802013046_create_users_table.js",
+          "size": 720,
+          "important": true,
+          "type": ".js"
+        },
+        {
+          "name": "20250805012817_create_stores_table.js",
+          "path": "backend\\migrations\\20250805012817_create_stores_table.js",
+          "size": 674,
+          "important": true,
+          "type": ".js"
+        },
+        {
+          "name": "20250805013223_create_boards_table.js",
+          "path": "backend\\migrations\\20250805013223_create_boards_table.js",
+          "size": 414,
+          "important": true,
+          "type": ".js"
+        },
+        {
+          "name": "20250805013332_create_alcohol_table.js",
+          "path": "backend\\migrations\\20250805013332_create_alcohol_table.js",
+          "size": 843,
+          "important": true,
+          "type": ".js"
+        },
+        {
+          "name": "20250805013533_create_bourbons_table.js",
+          "path": "backend\\migrations\\20250805013533_create_bourbons_table.js",
+          "size": 492,
+          "important": true,
+          "type": ".js"
+        },
+        {
+          "name": "20250805013827_create_current_inventory_table.js",
+          "path": "backend\\migrations\\20250805013827_create_current_inventory_table.js",
+          "size": 715,
+          "important": true,
+          "type": ".js"
+        },
+        {
+          "name": "20250805014216_create_inventory_history_table.js",
+          "path": "backend\\migrations\\20250805014216_create_inventory_history_table.js",
+          "size": 682,
+          "important": true,
+          "type": ".js"
+        },
+        {
+          "name": "20250805014453_create_warehouse_inventory_history_v2_table.js",
+          "path": "backend\\migrations\\20250805014453_create_warehouse_inventory_history_v2_table.js",
+          "size": 829,
+          "important": true,
+          "type": ".js"
+        },
+        {
+          "name": "20250805014727_create_shipments_history_table.js",
+          "path": "backend\\migrations\\20250805014727_create_shipments_history_table.js",
+          "size": 712,
+          "important": true,
+          "type": ".js"
+        },
+        {
+          "name": "20250805021555_add_status_to_users.js",
+          "path": "backend\\migrations\\20250805021555_add_status_to_users.js",
+          "size": 671,
+          "important": true,
+          "type": ".js"
+        },
+        {
+          "name": "20250808000100_add_phone_number_to_users.js",
+          "path": "backend\\migrations\\20250808000100_add_phone_number_to_users.js",
+          "size": 381,
+          "important": true,
+          "type": ".js"
+        },
+        {
+          "name": "20250809034338_add_updated_at_to_users.js",
+          "path": "backend\\migrations\\20250809034338_add_updated_at_to_users.js",
+          "size": 420,
+          "important": true,
+          "type": ".js"
+        }
+      ],
+      "purpose": "Project files"
+    },
+    "backend\\models": {
+      "files": [],
+      "purpose": "Project files"
+    },
+    "backend\\routes": {
+      "files": [
+        {
+          "name": "adminRoutes.js",
+          "path": "backend\\routes\\adminRoutes.js",
+          "size": 695,
+          "important": true,
+          "type": ".js"
+        },
+        {
+          "name": "authRoutes.js",
+          "path": "backend\\routes\\authRoutes.js",
+          "size": 646,
+          "important": true,
+          "type": ".js"
+        },
+        {
+          "name": "userRoutes.js",
+          "path": "backend\\routes\\userRoutes.js",
+          "size": 3689,
+          "important": true,
+          "type": ".js"
+        }
+      ],
+      "purpose": "Project files"
+    },
+    "backend\\seed": {
+      "files": [
+        {
+          "name": "seed_admin.js",
+          "path": "backend\\seed\\seed_admin.js",
+          "size": 982,
+          "important": true,
+          "type": ".js"
+        }
+      ],
+      "purpose": "Project files"
+    },
+    "frontend": {
+      "files": [
+        {
+          "name": ".gitignore",
+          "path": "frontend\\.gitignore",
+          "size": 253,
+          "important": true,
+          "type": "no_extension"
+        },
+        {
+          "name": "eslint.config.js",
+          "path": "frontend\\eslint.config.js",
+          "size": 763,
+          "important": true,
+          "type": ".js"
+        },
+        {
+          "name": "index.html",
+          "path": "frontend\\index.html",
+          "size": 370,
+          "important": false,
+          "type": ".html"
+        },
+        {
+          "name": "package-lock.json",
+          "path": "frontend\\package-lock.json",
+          "size": 97411,
+          "important": true,
+          "type": ".json"
+        },
+        {
+          "name": "package.json",
+          "path": "frontend\\package.json",
+          "size": 638,
+          "important": true,
+          "type": ".json"
+        },
+        {
+          "name": "README.md",
+          "path": "frontend\\README.md",
+          "size": 856,
+          "important": true,
+          "type": ".md"
+        },
+        {
+          "name": "vite.config.js",
+          "path": "frontend\\vite.config.js",
+          "size": 432,
+          "important": true,
+          "type": ".js"
+        }
+      ],
+      "purpose": "React frontend application"
+    },
+    "frontend\\public": {
+      "files": [
+        {
+          "name": "favicon.ico",
+          "path": "frontend\\public\\favicon.ico",
+          "size": 15406,
+          "important": false,
+          "type": ".ico"
+        },
+        {
+          "name": "vite.svg",
+          "path": "frontend\\public\\vite.svg",
+          "size": 1497,
+          "important": false,
+          "type": ".svg"
+        }
+      ],
+      "purpose": "Project files"
+    },
+    "frontend\\public\\images": {
+      "files": [
+        {
+          "name": "admin-bg.jpg",
+          "path": "frontend\\public\\images\\admin-bg.jpg",
+          "size": 5045813,
+          "important": false,
+          "type": ".jpg"
+        },
+        {
+          "name": "home-bg.jpg",
+          "path": "frontend\\public\\images\\home-bg.jpg",
+          "size": 363471,
+          "important": false,
+          "type": ".jpg"
+        },
+        {
+          "name": "login-bg.jpg",
+          "path": "frontend\\public\\images\\login-bg.jpg",
+          "size": 2773911,
+          "important": false,
+          "type": ".jpg"
+        },
+        {
+          "name": "profile-bg.jpg",
+          "path": "frontend\\public\\images\\profile-bg.jpg",
+          "size": 4428769,
+          "important": false,
+          "type": ".jpg"
+        },
+        {
+          "name": "register-bg.jpg",
+          "path": "frontend\\public\\images\\register-bg.jpg",
+          "size": 273487,
+          "important": false,
+          "type": ".jpg"
+        }
+      ],
+      "purpose": "Project files"
+    },
+    "frontend\\src": {
+      "files": [
+        {
+          "name": "App.css",
+          "path": "frontend\\src\\App.css",
+          "size": 1854,
+          "important": true,
+          "type": ".css"
+        },
+        {
+          "name": "App.jsx",
+          "path": "frontend\\src\\App.jsx",
+          "size": 3884,
+          "important": true,
+          "type": ".jsx"
+        },
+        {
+          "name": "index.css",
+          "path": "frontend\\src\\index.css",
+          "size": 1370,
+          "important": true,
+          "type": ".css"
+        },
+        {
+          "name": "main.jsx",
+          "path": "frontend\\src\\main.jsx",
+          "size": 413,
+          "important": true,
+          "type": ".jsx"
+        }
+      ],
+      "purpose": "Project files"
+    },
+    "frontend\\src\\assets": {
+      "files": [
+        {
+          "name": "react.svg",
+          "path": "frontend\\src\\assets\\react.svg",
+          "size": 4126,
+          "important": false,
+          "type": ".svg"
+        }
+      ],
+      "purpose": "Project files"
+    },
+    "frontend\\src\\components": {
+      "files": [
+        {
+          "name": "ProtectedRoute.jsx",
+          "path": "frontend\\src\\components\\ProtectedRoute.jsx",
+          "size": 783,
+          "important": true,
+          "type": ".jsx"
+        },
+        {
+          "name": "PublicLayout.css",
+          "path": "frontend\\src\\components\\PublicLayout.css",
+          "size": 1428,
+          "important": true,
+          "type": ".css"
+        },
+        {
+          "name": "PublicLayout.jsx",
+          "path": "frontend\\src\\components\\PublicLayout.jsx",
+          "size": 1017,
+          "important": true,
+          "type": ".jsx"
+        }
+      ],
+      "purpose": "Project files"
+    },
+    "frontend\\src\\contexts": {
+      "files": [
+        {
+          "name": "AuthContext.jsx",
+          "path": "frontend\\src\\contexts\\AuthContext.jsx",
+          "size": 3250,
+          "important": true,
+          "type": ".jsx"
+        }
+      ],
+      "purpose": "Project files"
+    },
+    "frontend\\src\\pages": {
+      "files": [
+        {
+          "name": "admin.css",
+          "path": "frontend\\src\\pages\\admin.css",
+          "size": 1521,
+          "important": true,
+          "type": ".css"
+        },
+        {
+          "name": "Admin.jsx",
+          "path": "frontend\\src\\pages\\Admin.jsx",
+          "size": 3424,
+          "important": true,
+          "type": ".jsx"
+        },
+        {
+          "name": "Home.css",
+          "path": "frontend\\src\\pages\\Home.css",
+          "size": 740,
+          "important": true,
+          "type": ".css"
+        },
+        {
+          "name": "Home.jsx",
+          "path": "frontend\\src\\pages\\Home.jsx",
+          "size": 324,
+          "important": true,
+          "type": ".jsx"
+        },
+        {
+          "name": "Login.css",
+          "path": "frontend\\src\\pages\\Login.css",
+          "size": 2031,
+          "important": true,
+          "type": ".css"
+        },
+        {
+          "name": "Login.jsx",
+          "path": "frontend\\src\\pages\\Login.jsx",
+          "size": 2357,
+          "important": true,
+          "type": ".jsx"
+        },
+        {
+          "name": "profile.css",
+          "path": "frontend\\src\\pages\\profile.css",
+          "size": 3327,
+          "important": true,
+          "type": ".css"
+        },
+        {
+          "name": "Profile.jsx",
+          "path": "frontend\\src\\pages\\Profile.jsx",
+          "size": 9038,
+          "important": true,
+          "type": ".jsx"
+        },
+        {
+          "name": "register.css",
+          "path": "frontend\\src\\pages\\register.css",
+          "size": 3573,
+          "important": true,
+          "type": ".css"
+        },
+        {
+          "name": "Register.jsx",
+          "path": "frontend\\src\\pages\\Register.jsx",
+          "size": 6307,
+          "important": true,
+          "type": ".jsx"
+        }
+      ],
+      "purpose": "Project files"
+    }
+  },
+  "file_summary": {
+    "total_files": 67,
+    "important_files": 53,
+    "file_types": {
+      ".example": 1,
+      "no_extension": 3,
+      ".yml": 1,
+      ".py": 1,
+      ".ico": 2,
+      ".md": 2,
+      ".docx": 1,
+      ".js": 25,
+      ".json": 4,
+      ".sqlite3": 1,
+      ".html": 1,
+      ".svg": 2,
+      ".jpg": 5,
+      ".css": 8,
+      ".jsx": 10
+    }
+  },
+  "key_decisions": [
+    "Implemented secure-by-default authentication",
+    "Separated PublicLayout vs AuthenticatedLayout",
+    "JWT stored in HTTP-only cookies",
+    "Role-based access control (admin, power_user, user)",
+    "Full-width background images on all pages"
+  ]
+}

@@ -15,6 +15,7 @@ import Login from './pages/Login.jsx';
 import Register from './pages/Register.jsx';
 import Admin from './pages/Admin.jsx';
 import Home from './pages/Home.jsx';
+import Profile from './pages/Profile.jsx'; // <-- NEW
 import './App.css';
 
 // Authenticated Layout - Full app experience
@@ -40,6 +41,7 @@ function AuthenticatedLayout({ children }) {
             {user && (user.role === 'admin' || user.role === 'power_user') && (
               <Link to="/admin">Admin</Link>
             )}
+            <Link to="/profile">Profile</Link> {/* <-- NEW */}
           </div>
           <div className="nav-right">
             <span style={{ marginRight: '1rem', color: '#5A3E1B' }}>
@@ -114,6 +116,7 @@ function AppContent({ status }) {
       <Routes>
         {/* Protected routes - all automatically secured */}
         <Route path="/" element={<Home status={status} />} />
+        <Route path="/profile" element={<Profile />} /> {/* <-- NEW */}
         
         {/* Admin route with role checking */}
         <Route 
@@ -126,8 +129,6 @@ function AppContent({ status }) {
             )
           } 
         />
-        
-        {/* Add future protected routes here - they're automatically secured! */}
         
         {/* Redirect auth routes to home if already logged in */}
         <Route path="/login" element={<Navigate to="/" replace />} />
