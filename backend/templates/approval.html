@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Account Approved - {{siteName}}</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f8f6f4;
+        }
+        .container {
+            background: white;
+            padding: 40px;
+            border-radius: 16px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+        .header {
+            text-align: center;
+            border-bottom: 2px solid #4caf50;
+            padding-bottom: 20px;
+            margin-bottom: 30px;
+        }
+        .header h1 {
+            color: #4caf50;
+            margin: 0;
+            font-size: 28px;
+        }
+        .success-badge {
+            background: #e8f5e8;
+            border: 2px solid #4caf50;
+            border-radius: 50px;
+            padding: 15px 25px;
+            text-align: center;
+            margin: 20px 0;
+            font-size: 18px;
+            font-weight: bold;
+            color: #2e7d32;
+        }
+        .content {
+            margin-bottom: 30px;
+        }
+        .content h2 {
+            color: #4b3626;
+            margin-bottom: 15px;
+        }
+        .features {
+            background: #f9f9f9;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+        .features ul {
+            margin: 0;
+            padding-left: 20px;
+        }
+        .features li {
+            margin: 8px 0;
+        }
+        .cta-button {
+            text-align: center;
+            margin: 30px 0;
+        }
+        .button {
+            display: inline-block;
+            background: #6a451f;
+            color: white;
+            padding: 15px 30px;
+            text-decoration: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: bold;
+        }
+        .footer {
+            border-top: 1px solid #eee;
+            padding-top: 20px;
+            margin-top: 30px;
+            font-size: 14px;
+            color: #666;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>{{siteName}}</h1>
+        </div>
+        
+        <div class="success-badge">
+            🎉 Account Approved!
+        </div>
+        
+        <div class="content">
+            <h2>Welcome to the community, {{firstName}}!</h2>
+            
+            <p>Great news! Your WakePour account has been approved and is now active. You can now log in and start exploring everything we have to offer.</p>
+            
+            <div class="cta-button">
+                <a href="{{loginUrl}}/login" class="button">Log In Now</a>
+            </div>
+            
+            <div class="features">
+                <h3>What you can do now:</h3>
+                <ul>
+                    <li><strong>Track Inventory:</strong> Monitor bourbon availability across NC ABC stores in real-time</li>
+                    <li><strong>Set Preferences:</strong> Create your personal wishlist and get notified when bottles arrive</li>
+                    <li><strong>View Analytics:</strong> See trends and patterns in bourbon distribution across the state</li>
+                    <li><strong>Community Features:</strong> Connect with fellow bourbon enthusiasts and share discoveries</li>
+                    <li><strong>Mobile Access:</strong> Access your account from any device, anywhere</li>
+                </ul>
+            </div>
+            
+            <p>We're excited to have you as part of our growing community of North Carolina bourbon lovers. If you have any questions or need help getting started, don't hesitate to reach out.</p>
+            
+            <p><strong>Tip:</strong> Start by setting up your profile and adding your favorite bourbons to your watchlist. You'll receive notifications when they become available at stores near you!</p>
+        </div>
+        
+        <div class="footer">
+            <p>
+                <strong>{{siteName}}</strong><br>
+                Questions? Contact us at <a href="mailto:{{supportEmail}}">{{supportEmail}}</a>
+            </p>
+            <p style="margin-top: 15px;">
+                <a href="{{loginUrl}}/login">Log In</a> | 
+                <a href="{{loginUrl}}/profile">My Profile</a> | 
+                <a href="mailto:{{supportEmail}}">Support</a>
+            </p>
+        </div>
+    </div>
+</body>
+</html>

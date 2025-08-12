@@ -4,6 +4,7 @@ import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import Joi from 'joi';
 import db from '../config/db.js';
+import emailService from '../services/emailService.js';
 
 const JWT_SECRET = process.env.JWT_SECRET;
 
@@ -63,24 +64,56 @@ export async function register(req, res) {
 
   const password_hash = await bcrypt.hash(password, 12);
 
-  // Insert user; SQLite doesn't reliably support .returning(), so re-select
-  await db('users').insert({
-    first_name,
-    last_name,
-    email,
-    password_hash,
-    status: 'active', // your app treats new users as active; change if you switch to email verification
-    role: 'user',
-    created_at: new Date(),
-    updated_at: new Date()
-  });
+  try {
+    // Insert user; SQLite doesn't reliably support .returning(), so re-select
+    await db('users').insert({
+      first_name,
+      last_name,
+      email,
+      password_hash,
+      status: 'pending', // User starts as pending until admin approval
+      role: 'user',
+      created_at: new Date(),
+      updated_at: new Date()
+    });
 
-  const user = await db('users')
-    .select('user_id', 'first_name', 'last_name', 'email', 'role', 'status', 'phone_number', 'created_at')
-    .where({ email })
-    .first();
+    const user = await db('users')
+      .select('user_id', 'first_name', 'last_name', 'email', 'role', 'status', 'phone_number', 'created_at')
+      .where({ email })
+      .first();
 
-  res.status(201).json(user);
+    // Send welcome email to user (async, don't wait for it)
+    emailService.sendWelcomeEmail(user.email, user.first_name)
+      .then(result => {
+        if (result.success) {
+          console.log(`Welcome email sent to ${user.email}`);
+        } else {
+          console.error(`Failed to send welcome email to ${user.email}:`, result.error);
+        }
+      })
+      .catch(err => console.error('Welcome email error:', err));
+
+    // Send admin notification (async, don't wait for it)
+    emailService.sendAdminNotification(user)
+      .then(result => {
+        if (result.success) {
+          console.log(`Admin notification sent for user ${user.user_id}`);
+        } else {
+          console.error(`Failed to send admin notification for user ${user.user_id}:`, result.error);
+        }
+      })
+      .catch(err => console.error('Admin notification error:', err));
+
+    // Return success with clear next steps
+    res.status(201).json({
+      user: user,
+      message: 'Registration successful! Your account is pending approval. You will receive an email when your account is activated.',
+      nextSteps: 'Please check your email for a welcome message and await approval from our team.'
+    });
+  } catch (err) {
+    console.error('Registration error:', err);
+    res.status(500).json({ error: 'Registration failed. Please try again.' });
+  }
 }
 
 // POST /api/auth/login
@@ -99,7 +132,22 @@ export async function login(req, res) {
   if (!ok) return res.status(401).json({ error: 'Invalid credentials.' });
 
   if (user.status !== 'active') {
-    return res.status(403).json({ error: 'Account not activated.' });
+    if (user.status === 'pending') {
+      return res.status(403).json({ 
+        error: 'Your account is pending approval. You will receive an email when your account is activated.',
+        status: 'pending'
+      });
+    } else if (user.status === 'disabled') {
+      return res.status(403).json({ 
+        error: 'Your account has been disabled. Please contact support for assistance.',
+        status: 'disabled'
+      });
+    } else {
+      return res.status(403).json({ 
+        error: 'Account not activated. Please contact support.',
+        status: user.status
+      });
+    }
   }
 
   const token = jwt.sign({ sub: user.user_id, role: user.role }, JWT_SECRET, { expiresIn: '2h' });
