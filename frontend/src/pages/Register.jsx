@@ -21,6 +21,7 @@ export default function Register() {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [successDetails, setSuccessDetails] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
 
@@ -37,6 +38,7 @@ export default function Register() {
     }));
     setError('');
     setSuccess('');
+    setSuccessDetails('');
   };
 
   const canSubmit =
@@ -50,6 +52,7 @@ export default function Register() {
     e.preventDefault();
     setError('');
     setSuccess('');
+    setSuccessDetails('');
     setIsLoading(true);
 
     try {
@@ -64,17 +67,87 @@ export default function Register() {
         }),
       });
       const data = await res.json();
+      
       if (!res.ok) {
         throw new Error(data.error || 'Registration failed');
       }
-      setSuccess('Registration successful! Redirecting to login...');
-      setTimeout(() => navigate('/login'), 2000);
+
+      // Handle improved backend response
+      setSuccess(data.message || 'Registration successful!');
+      if (data.nextSteps) {
+        setSuccessDetails(data.nextSteps);
+      }
+
+      // Clear the form
+      setForm({
+        first_name: '',
+        last_name: '',
+        email: '',
+        password: '',
+        confirmPassword: '',
+      });
+
+      // Don't auto-redirect - let user read the message and go to login when ready
     } catch (err) {
       setError(err.message);
     } finally {
       setIsLoading(false);
     }
   };
+
+  // Show success page instead of form after successful registration
+  if (success) {
+    return (
+      <div className="register-page">
+        <div className="register-success-page">
+          <div className="success-icon">🎉</div>
+          <h2>Registration Successful!</h2>
+          
+          <div className="success-content">
+            <div className="success-message">{success}</div>
+            {successDetails && (
+              <div className="success-details">{successDetails}</div>
+            )}
+            
+            <div className="success-info">
+              <h3>What happens next?</h3>
+              <ol>
+                <li>Check your email for a welcome message</li>
+                <li>Our team will review your registration</li>
+                <li>You'll receive an approval email (usually within 24-48 hours)</li>
+                <li>Once approved, you can log in and start using WakePour</li>
+              </ol>
+            </div>
+          </div>
+
+          <div className="success-actions">
+            <button 
+              className="register-button primary"
+              onClick={() => navigate('/login')}
+            >
+              Continue to Login
+            </button>
+            <button 
+              className="register-button secondary"
+              onClick={() => {
+                setSuccess('');
+                setSuccessDetails('');
+                setForm({
+                  first_name: '',
+                  last_name: '',
+                  email: '',
+                  password: '',
+                  confirmPassword: '',
+                });
+              }}
+            >
+              Register Another Account
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="register-page">
@@ -172,9 +245,8 @@ export default function Register() {
           )}
         </div>
 
-        {/* Actionable feedback */}
+        {/* Error messages only */}
         {error && <div className="register-error">{error}</div>}
-        {success && <div className="register-success">{success}</div>}
 
         <button
           type="submit"

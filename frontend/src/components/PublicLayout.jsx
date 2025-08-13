@@ -13,7 +13,7 @@ export default function PublicLayout({ children }) {
       <header className="public-header">
         <div className="public-nav">
           <div className="public-brand">
-            <h1>NC Bourbon Tracker</h1>
+            <h1>WakePour</h1>
           </div>
           <div className="public-auth-links">
             {isLoginPage ? (

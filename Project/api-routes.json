@@ -40,11 +40,6 @@
     "file": "backend\\routes\\authRoutes.js"
   },
   {
-    "method": "PUT",
-    "path": "/update-profile",
-    "file": "backend\\routes\\authRoutes.js"
-  },
-  {
     "method": "GET",
     "path": "/me",
     "file": "backend\\routes\\userRoutes.js"
@@ -52,11 +47,6 @@
   {
     "method": "PUT",
     "path": "/me",
-    "file": "backend\\routes\\userRoutes.js"
-  },
-  {
-    "method": "POST",
-    "path": "/change-password",
     "file": "backend\\routes\\userRoutes.js"
   }
 ]

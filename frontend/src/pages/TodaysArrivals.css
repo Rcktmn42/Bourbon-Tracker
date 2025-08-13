@@ -1,0 +1,264 @@
+/* frontend/src/pages/TodaysArrivals.css */
+
+.arrivals-page {
+  min-height: 100vh;
+  background-image: url('/images/home-bg.jpg');
+  background-size: cover;
+  background-position: center;
+  background-attachment: fixed;
+  padding: 2rem 1rem;
+}
+
+.arrivals-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(2px);
+  border-radius: 16px;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.25);
+  overflow: hidden;
+}
+
+/* Header */
+.arrivals-header {
+  padding: 2rem;
+  border-bottom: 2px solid #6a451f;
+  background: linear-gradient(180deg, rgba(255,255,255,0.95), rgba(255,255,255,0.8));
+}
+
+.arrivals-header h1 {
+  margin: 0 0 1rem 0;
+  color: #6a451f;
+  font-size: 2.5rem;
+  text-align: center;
+}
+
+.arrivals-summary {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.arrivals-summary p {
+  margin: 0;
+  color: #4b3626;
+  font-size: 1.1rem;
+  font-weight: 500;
+}
+
+.refresh-button, .retry-button {
+  background: #6a451f;
+  color: white;
+  border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: all 0.2s ease;
+}
+
+.refresh-button:hover, .retry-button:hover {
+  background: #7b5227;
+  transform: translateY(-1px);
+}
+
+/* Loading and Error States */
+.loading, .error-message {
+  padding: 3rem 2rem;
+  text-align: center;
+  color: #4b3626;
+  font-size: 1.2rem;
+}
+
+.error-message {
+  color: #c62828;
+}
+
+.no-arrivals {
+  padding: 3rem 2rem;
+  text-align: center;
+}
+
+.no-arrivals h2 {
+  color: #6a451f;
+  margin-bottom: 1rem;
+}
+
+.no-arrivals p {
+  color: #666;
+  font-size: 1.1rem;
+}
+
+/* Content */
+.arrivals-content {
+  padding: 2rem;
+}
+
+.bourbon-group {
+  margin-bottom: 3rem;
+  border: 1px solid #e0d5c7;
+  border-radius: 12px;
+  overflow: hidden;
+  background: white;
+}
+
+.bourbon-name {
+  background: #f8f6f4;
+  padding: 1.5rem;
+  margin: 0;
+  color: #4b3626;
+  font-size: 1.5rem;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+  border-bottom: 1px solid #e0d5c7;
+}
+
+.plu-badge, .price-badge {
+  background: #6a451f;
+  color: white;
+  padding: 0.25rem 0.75rem;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.price-badge {
+  background: #2e7d32;
+}
+
+/* Store Grid */
+.stores-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 1rem;
+  padding: 1.5rem;
+}
+
+.store-card {
+  background: #fafafa;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  padding: 1.25rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  transition: box-shadow 0.2s ease;
+}
+
+.store-card:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.store-info {
+  flex: 1;
+}
+
+.store-name {
+  font-weight: 700;
+  color: #333;
+  margin-bottom: 0.5rem;
+  font-size: 1rem;
+}
+
+.store-nickname {
+  font-weight: 500;
+  color: #666;
+  margin-left: 0.5rem;
+}
+
+.store-address {
+  color: #666;
+  font-size: 0.9rem;
+  line-height: 1.3;
+}
+
+.quantity-info {
+  text-align: right;
+  min-width: 120px;
+}
+
+.new-quantity {
+  font-size: 1.25rem;
+  color: #2e7d32;
+  margin-bottom: 0.25rem;
+}
+
+.quantity-change {
+  font-size: 0.85rem;
+  color: #1976d2;
+  font-weight: 500;
+}
+
+.first-appearance {
+  font-size: 0.85rem;
+  color: #d32f2f;
+  font-weight: 600;
+  background: #ffebee;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+}
+
+/* Footer */
+.arrivals-footer {
+  padding: 1.5rem 2rem;
+  border-top: 1px solid #e0d5c7;
+  background: #f8f6f4;
+}
+
+.data-note {
+  margin: 0;
+  color: #666;
+  font-size: 0.9rem;
+  text-align: center;
+  line-height: 1.4;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .arrivals-page {
+    padding: 1rem 0.5rem;
+  }
+  
+  .arrivals-header {
+    padding: 1.5rem 1rem;
+  }
+  
+  .arrivals-header h1 {
+    font-size: 2rem;
+  }
+  
+  .arrivals-summary {
+    flex-direction: column;
+    text-align: center;
+  }
+  
+  .arrivals-content {
+    padding: 1rem;
+  }
+  
+  .bourbon-name {
+    padding: 1rem;
+    font-size: 1.25rem;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+  
+  .stores-grid {
+    grid-template-columns: 1fr;
+    padding: 1rem;
+  }
+  
+  .store-card {
+    flex-direction: column;
+    gap: 1rem;
+  }
+  
+  .quantity-info {
+    text-align: left;
+  }
+}

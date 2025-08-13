@@ -97,3 +97,349 @@
   border: 1px solid #B91C1C;
   box-sizing: border-box;
 }
+
+/* Add these styles to your existing Login.css and register.css files */
+
+/* Enhanced Registration Success Styles */
+.register-success {
+  background: #e8f5e8;
+  border: 1px solid #4caf50;
+  border-radius: 8px;
+  padding: 20px;
+  margin: 15px 0;
+}
+
+.register-success .success-message {
+  font-weight: bold;
+  color: #2e7d32;
+  margin-bottom: 10px;
+  font-size: 16px;
+}
+
+.register-success .success-details {
+  color: #388e3c;
+  margin-bottom: 15px;
+  line-height: 1.5;
+}
+
+.register-success .success-actions {
+  border-top: 1px solid #a5d6a7;
+  padding-top: 15px;
+  margin-top: 15px;
+}
+
+.register-success .success-actions p {
+  margin: 0;
+  color: #2e7d32;
+}
+
+.register-success .success-actions a {
+  color: #1976d2;
+  text-decoration: none;
+  font-weight: bold;
+}
+
+.register-success .success-actions a:hover {
+  text-decoration: underline;
+}
+
+/* Enhanced Login Error Styles */
+.login-error {
+  border-radius: 8px;
+  padding: 15px;
+  margin: 15px 0;
+  border-left: 4px solid #f44336;
+}
+
+.login-error.pending {
+  background: #fff3e0;
+  border-left-color: #ff9800;
+  color: #e65100;
+}
+
+.login-error.disabled {
+  background: #ffebee;
+  border-left-color: #f44336;
+  color: #c62828;
+}
+
+.login-error.credentials {
+  background: #fff3e0;
+  border-left-color: #ff9800;
+  color: #e65100;
+}
+
+.login-error.network {
+  background: #f3e5f5;
+  border-left-color: #9c27b0;
+  color: #7b1fa2;
+}
+
+.login-error .error-message {
+  font-weight: bold;
+  margin-bottom: 10px;
+}
+
+.login-error .error-help {
+  margin-top: 15px;
+  padding-top: 15px;
+  border-top: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.login-error .error-help p {
+  margin: 5px 0;
+  font-size: 14px;
+}
+
+.login-error .error-help ul {
+  margin: 8px 0;
+  padding-left: 20px;
+}
+
+.login-error .error-help li {
+  margin: 4px 0;
+  font-size: 14px;
+}
+
+/* Login Footer */
+.login-footer {
+  margin-top: 20px;
+  text-align: center;
+  padding-top: 15px;
+  border-top: 1px solid #eee;
+}
+
+.login-footer p {
+  margin: 0;
+  color: #666;
+  font-size: 14px;
+}
+
+.login-footer a {
+  color: #1976d2;
+  text-decoration: none;
+  font-weight: bold;
+}
+
+.login-footer a:hover {
+  text-decoration: underline;
+}
+
+/* Add these styles to your existing Login.css and register.css files */
+
+/* Registration Success Page */
+.register-success-page {
+  background: white;
+  padding: 40px;
+  border-radius: 16px;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.25);
+  text-align: center;
+  max-width: 500px;
+  margin: 0 auto;
+}
+
+.success-icon {
+  font-size: 64px;
+  margin-bottom: 20px;
+}
+
+.register-success-page h2 {
+  color: #4caf50;
+  margin-bottom: 30px;
+  font-size: 28px;
+}
+
+.success-content {
+  margin-bottom: 30px;
+  text-align: left;
+}
+
+.register-success-page .success-message {
+  font-weight: bold;
+  color: #2e7d32;
+  margin-bottom: 15px;
+  font-size: 16px;
+  text-align: center;
+}
+
+.register-success-page .success-details {
+  color: #388e3c;
+  margin-bottom: 25px;
+  line-height: 1.5;
+  text-align: center;
+}
+
+.success-info {
+  background: #f8f9fa;
+  padding: 20px;
+  border-radius: 8px;
+  margin: 20px 0;
+}
+
+.success-info h3 {
+  margin: 0 0 15px 0;
+  color: #333;
+  font-size: 18px;
+}
+
+.success-info ol {
+  margin: 0;
+  padding-left: 20px;
+  color: #555;
+}
+
+.success-info li {
+  margin: 8px 0;
+  line-height: 1.4;
+}
+
+.success-actions {
+  display: flex;
+  gap: 15px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.register-button.primary {
+  background: #4caf50;
+  color: white;
+}
+
+.register-button.primary:hover {
+  background: #45a049;
+}
+
+.register-button.secondary {
+  background: #f5f5f5;
+  color: #333;
+  border: 1px solid #ddd;
+}
+
+.register-button.secondary:hover {
+  background: #eeeeee;
+}
+
+/* Enhanced Registration Success Styles (for inline messages - keeping for backward compatibility) */
+.register-success {
+  background: #e8f5e8;
+  border: 1px solid #4caf50;
+  border-radius: 8px;
+  padding: 20px;
+  margin: 15px 0;
+}
+
+.register-success .success-message {
+  font-weight: bold;
+  color: #2e7d32;
+  margin-bottom: 10px;
+  font-size: 16px;
+}
+
+.register-success .success-details {
+  color: #388e3c;
+  margin-bottom: 15px;
+  line-height: 1.5;
+}
+
+.register-success .success-actions {
+  border-top: 1px solid #a5d6a7;
+  padding-top: 15px;
+  margin-top: 15px;
+}
+
+.register-success .success-actions p {
+  margin: 0;
+  color: #2e7d32;
+}
+
+.register-success .success-actions a {
+  color: #1976d2;
+  text-decoration: none;
+  font-weight: bold;
+}
+
+.register-success .success-actions a:hover {
+  text-decoration: underline;
+}
+
+/* Enhanced Login Error Styles */
+.login-error {
+  border-radius: 8px;
+  padding: 15px;
+  margin: 15px 0;
+  border-left: 4px solid #f44336;
+}
+
+.login-error.pending {
+  background: #fff3e0;
+  border-left-color: #ff9800;
+  color: #e65100;
+}
+
+.login-error.disabled {
+  background: #ffebee;
+  border-left-color: #f44336;
+  color: #c62828;
+}
+
+.login-error.credentials {
+  background: #fff3e0;
+  border-left-color: #ff9800;
+  color: #e65100;
+}
+
+.login-error.network {
+  background: #f3e5f5;
+  border-left-color: #9c27b0;
+  color: #7b1fa2;
+}
+
+.login-error .error-message {
+  font-weight: bold;
+  margin-bottom: 10px;
+}
+
+.login-error .error-help {
+  margin-top: 15px;
+  padding-top: 15px;
+  border-top: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.login-error .error-help p {
+  margin: 5px 0;
+  font-size: 14px;
+}
+
+.login-error .error-help ul {
+  margin: 8px 0;
+  padding-left: 20px;
+}
+
+.login-error .error-help li {
+  margin: 4px 0;
+  font-size: 14px;
+}
+
+/* Login Footer */
+.login-footer {
+  margin-top: 20px;
+  text-align: center;
+  padding-top: 15px;
+  border-top: 1px solid #eee;
+}
+
+.login-footer p {
+  margin: 0;
+  color: #666;
+  font-size: 14px;
+}
+
+.login-footer a {
+  color: #1976d2;
+  text-decoration: none;
+  font-weight: bold;
+}
+
+.login-footer a:hover {
+  text-decoration: underline;
+}

@@ -12,6 +12,7 @@ import { dirname } from 'path';
 import authRoutes from './routes/authRoutes.js';
 import adminRoutes from './routes/adminRoutes.js';
 import userRoutes from './routes/userRoutes.js';
+import inventoryRoutes from './routes/inventoryRoutes.js';  // NEW
 
 // Middleware
 import { authenticate } from './middleware/authMiddleware.js';
@@ -51,7 +52,8 @@ app.get('/health', (req, res) => {
 // Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/admin', adminRoutes);
-app.use('/api/user', authenticate, userRoutes); // Added authenticate middleware
+app.use('/api/user', authenticate, userRoutes);
+app.use('/api/inventory', authenticate, inventoryRoutes);  // NEW - Protected inventory routes
 
 // 404 handler
 app.use((req, res) => {

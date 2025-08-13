@@ -1,6 +1,6 @@
 {
   "project_name": "NC Bourbon Tracker",
-  "generated_at": "2025-08-10T14:17:31.075226",
+  "generated_at": "2025-08-12T18:20:35.375962",
   "root_path": "C:\\Users\\JTLew\\source\\repos\\Bourbon-Tracker",
   "architecture": {
     "type": "Full Stack Web Application",
@@ -54,13 +54,6 @@
           "size": 0,
           "important": true,
           "type": ".md"
-        },
-        {
-          "name": "Solution Blueprint.docx",
-          "path": "Solution Blueprint.docx",
-          "size": 19718,
-          "important": false,
-          "type": ".docx"
         }
       ],
       "purpose": "Project files"
@@ -70,7 +63,7 @@
         {
           "name": ".env",
           "path": "backend\\.env",
-          "size": 191,
+          "size": 420,
           "important": false,
           "type": "no_extension"
         },
@@ -84,21 +77,35 @@
         {
           "name": "package-lock.json",
           "path": "backend\\package-lock.json",
-          "size": 100162,
+          "size": 100539,
           "important": true,
           "type": ".json"
         },
         {
           "name": "package.json",
           "path": "backend\\package.json",
-          "size": 784,
+          "size": 812,
           "important": true,
           "type": ".json"
         },
         {
           "name": "server.js",
           "path": "backend\\server.js",
-          "size": 1689,
+          "size": 1780,
+          "important": true,
+          "type": ".js"
+        },
+        {
+          "name": "test-email-service.js",
+          "path": "backend\\test-email-service.js",
+          "size": 467,
+          "important": true,
+          "type": ".js"
+        },
+        {
+          "name": "test-email.js",
+          "path": "backend\\test-email.js",
+          "size": 1094,
           "important": true,
           "type": ".js"
         }
@@ -122,21 +129,21 @@
         {
           "name": "adminController.js",
           "path": "backend\\controllers\\adminController.js",
-          "size": 1442,
+          "size": 2551,
           "important": true,
           "type": ".js"
         },
         {
           "name": "authController.js",
           "path": "backend\\controllers\\authController.js",
-          "size": 6265,
+          "size": 7354,
           "important": true,
           "type": ".js"
         },
         {
           "name": "userController.js",
           "path": "backend\\controllers\\userController.js",
-          "size": 3222,
+          "size": 3227,
           "important": true,
           "type": ".js"
         }
@@ -148,7 +155,7 @@
         {
           "name": "database.sqlite3",
           "path": "backend\\data\\database.sqlite3",
-          "size": 106496,
+          "size": 110592,
           "important": false,
           "type": ".sqlite3"
         }
@@ -272,14 +279,14 @@
         {
           "name": "authRoutes.js",
           "path": "backend\\routes\\authRoutes.js",
-          "size": 646,
+          "size": 626,
           "important": true,
           "type": ".js"
         },
         {
           "name": "userRoutes.js",
           "path": "backend\\routes\\userRoutes.js",
-          "size": 3689,
+          "size": 452,
           "important": true,
           "type": ".js"
         }
@@ -294,6 +301,44 @@
           "size": 982,
           "important": true,
           "type": ".js"
+        }
+      ],
+      "purpose": "Project files"
+    },
+    "backend\\services": {
+      "files": [
+        {
+          "name": "emailService.js",
+          "path": "backend\\services\\emailService.js",
+          "size": 6061,
+          "important": true,
+          "type": ".js"
+        }
+      ],
+      "purpose": "Project files"
+    },
+    "backend\\templates": {
+      "files": [
+        {
+          "name": "admin-notification.html",
+          "path": "backend\\templates\\admin-notification.html",
+          "size": 4883,
+          "important": false,
+          "type": ".html"
+        },
+        {
+          "name": "approval.html",
+          "path": "backend\\templates\\approval.html",
+          "size": 4822,
+          "important": false,
+          "type": ".html"
+        },
+        {
+          "name": "welcome.html",
+          "path": "backend\\templates\\welcome.html",
+          "size": 3666,
+          "important": false,
+          "type": ".html"
         }
       ],
       "purpose": "Project files"
@@ -317,7 +362,7 @@
         {
           "name": "index.html",
           "path": "frontend\\index.html",
-          "size": 370,
+          "size": 360,
           "important": false,
           "type": ".html"
         },
@@ -475,7 +520,7 @@
         {
           "name": "PublicLayout.jsx",
           "path": "frontend\\src\\components\\PublicLayout.jsx",
-          "size": 1017,
+          "size": 1007,
           "important": true,
           "type": ".jsx"
         }
@@ -487,7 +532,7 @@
         {
           "name": "AuthContext.jsx",
           "path": "frontend\\src\\contexts\\AuthContext.jsx",
-          "size": 3250,
+          "size": 2711,
           "important": true,
           "type": ".jsx"
         }
@@ -520,21 +565,21 @@
         {
           "name": "Home.jsx",
           "path": "frontend\\src\\pages\\Home.jsx",
-          "size": 324,
+          "size": 314,
           "important": true,
           "type": ".jsx"
         },
         {
           "name": "Login.css",
           "path": "frontend\\src\\pages\\Login.css",
-          "size": 2031,
+          "size": 8088,
           "important": true,
           "type": ".css"
         },
         {
           "name": "Login.jsx",
           "path": "frontend\\src\\pages\\Login.jsx",
-          "size": 2357,
+          "size": 5165,
           "important": true,
           "type": ".jsx"
         },
@@ -548,47 +593,101 @@
         {
           "name": "Profile.jsx",
           "path": "frontend\\src\\pages\\Profile.jsx",
-          "size": 9038,
+          "size": 10601,
           "important": true,
           "type": ".jsx"
         },
         {
           "name": "register.css",
           "path": "frontend\\src\\pages\\register.css",
-          "size": 3573,
+          "size": 9628,
           "important": true,
           "type": ".css"
         },
         {
           "name": "Register.jsx",
           "path": "frontend\\src\\pages\\Register.jsx",
-          "size": 6307,
+          "size": 8496,
           "important": true,
           "type": ".jsx"
+        }
+      ],
+      "purpose": "Project files"
+    },
+    "Project": {
+      "files": [
+        {
+          "name": "api-routes.json",
+          "path": "Project\\api-routes.json",
+          "size": 1295,
+          "important": true,
+          "type": ".json"
+        },
+        {
+          "name": "env-vars.json",
+          "path": "Project\\env-vars.json",
+          "size": 2,
+          "important": true,
+          "type": ".json"
+        },
+        {
+          "name": "postman.json",
+          "path": "Project\\postman.json",
+          "size": 10337,
+          "important": true,
+          "type": ".json"
+        },
+        {
+          "name": "project-source.md",
+          "path": "Project\\project-source.md",
+          "size": 329661,
+          "important": true,
+          "type": ".md"
+        },
+        {
+          "name": "project-structure.json",
+          "path": "Project\\project-structure.json",
+          "size": 16430,
+          "important": true,
+          "type": ".json"
+        },
+        {
+          "name": "Solution Blueprint.docx",
+          "path": "Project\\Solution Blueprint.docx",
+          "size": 19718,
+          "important": false,
+          "type": ".docx"
+        },
+        {
+          "name": "WakePour Production deployment guide.docx",
+          "path": "Project\\WakePour Production deployment guide.docx",
+          "size": 20873,
+          "important": false,
+          "type": ".docx"
         }
       ],
       "purpose": "Project files"
     }
   },
   "file_summary": {
-    "total_files": 67,
-    "important_files": 53,
+    "total_files": 79,
+    "important_files": 61,
     "file_types": {
       ".example": 1,
       "no_extension": 3,
       ".yml": 1,
       ".py": 1,
       ".ico": 2,
-      ".md": 2,
-      ".docx": 1,
-      ".js": 25,
-      ".json": 4,
+      ".md": 3,
+      ".js": 28,
+      ".json": 8,
       ".sqlite3": 1,
-      ".html": 1,
+      ".html": 4,
       ".svg": 2,
       ".jpg": 5,
       ".css": 8,
-      ".jsx": 10
+      ".jsx": 10,
+      ".docx": 2
     }
   },
   "key_decisions": [

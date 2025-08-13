@@ -7,6 +7,7 @@ import './Login.css';
 export default function Login() {
   const [formData, setFormData] = useState({ email: '', password: '' });
   const [error, setError] = useState('');
+  const [errorType, setErrorType] = useState(''); // Track error type for different styling
   const [isLoading, setIsLoading] = useState(false);
 
   const { user, login } = useAuth();
@@ -24,11 +25,15 @@ export default function Login() {
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
+    // Clear errors when user starts typing
+    setError('');
+    setErrorType('');
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
+    setErrorType('');
     setIsLoading(true);
 
     try {
@@ -41,7 +46,17 @@ export default function Login() {
       const result = await login(payload);
 
       if (!result?.success) {
-        setError(result?.error || 'Login failed. Please check your credentials.');
+        const errorMessage = result?.error || 'Login failed. Please check your credentials.';
+        setError(errorMessage);
+        
+        // Set error type based on message content for different styling
+        if (errorMessage.includes('pending approval')) {
+          setErrorType('pending');
+        } else if (errorMessage.includes('disabled')) {
+          setErrorType('disabled');
+        } else {
+          setErrorType('credentials');
+        }
         return;
       }
 
@@ -52,6 +67,7 @@ export default function Login() {
     } catch (err) {
       console.error('Login error:', err);
       setError('Network or server error. Please try again.');
+      setErrorType('network');
     } finally {
       setIsLoading(false);
     }
@@ -65,7 +81,38 @@ export default function Login() {
       <form className="login-form" onSubmit={handleSubmit} noValidate>
         <h2>Login</h2>
 
-        {error && <div className="login-error">{error}</div>}
+        {/* Enhanced error display with different types */}
+        {error && (
+          <div className={`login-error ${errorType}`}>
+            <div className="error-message">{error}</div>
+            {errorType === 'pending' && (
+              <div className="error-help">
+                <p>💡 <strong>What's next?</strong></p>
+                <ul>
+                  <li>Check your email for a welcome message</li>
+                  <li>You'll receive another email when approved</li>
+                  <li>Approval typically takes 24-48 hours</li>
+                </ul>
+              </div>
+            )}
+            {errorType === 'disabled' && (
+              <div className="error-help">
+                <p>💡 <strong>Need help?</strong></p>
+                <p>Contact our support team for assistance with your account.</p>
+              </div>
+            )}
+            {errorType === 'credentials' && (
+              <div className="error-help">
+                <p>💡 <strong>Having trouble?</strong></p>
+                <ul>
+                  <li>Double-check your email and password</li>
+                  <li>Make sure Caps Lock is off</li>
+                  <li>Try typing your password in a text editor first</li>
+                </ul>
+              </div>
+            )}
+          </div>
+        )}
 
         <label htmlFor="email">Email</label>
         <input
@@ -99,6 +146,11 @@ export default function Login() {
         >
           {isLoading ? 'Logging in…' : 'Log In'}
         </button>
+
+        {/* Additional helpful links */}
+        <div className="login-footer">
+          <p>Don't have an account? <a href="/register" onClick={(e) => { e.preventDefault(); navigate('/register'); }}>Create one here</a></p>
+        </div>
       </form>
     </div>
   );

@@ -137,7 +137,7 @@
             "header": [{ "key": "Content-Type", "value": "application/json" }],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"first_name\": \"Updated\",\n  \"last_name\": \"User\",\n  \"phone\": \"+19195551234\"\n}"
+              "raw": "{\n  \"first_name\": \"Updated\",\n  \"last_name\": \"User\",\n  \"phone_number\": \"+19195551234\"\n}"
             },
             "url": {
               "raw": "{{base_url}}/api/auth/profile",
