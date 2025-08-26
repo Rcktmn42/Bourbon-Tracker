@@ -1,17 +1,31 @@
 // backend/routes/inventoryRoutes.js
 import express from 'express';
-import { getTodaysArrivals, getInventorySummary, testDatabase } from '../controllers/inventoryController.js';
+import { 
+    // Your existing imports
+    getTodaysArrivals, 
+    getInventorySummary, 
+    testDatabase,
+    // New imports for inventory reports
+    getCurrentAllocatedInventory,
+    getStoreInventoryForProduct,
+    searchAllocatedProducts,
+    generateDeliveryAnalysis,
+    getStoresWithoutDeliveries // ADD THIS
+} from '../controllers/inventoryController.js';
 
 const router = express.Router();
 
-// GET /api/inventory/test - Test database connection
+// Your existing routes
 router.get('/test', testDatabase);
-
-// GET /api/inventory/todays-arrivals - Today's bourbon deliveries
 router.get('/todays-arrivals', getTodaysArrivals);
-
-// GET /api/inventory/summary - Basic inventory stats  
 router.get('/summary', getInventorySummary);
+
+// NEW ROUTES for inventory reports
+router.get('/allocated-current', getCurrentAllocatedInventory);
+router.get('/product/:plu/stores', getStoreInventoryForProduct);
+router.get('/search/:term', searchAllocatedProducts);
+router.post('/delivery-analysis', generateDeliveryAnalysis);
+router.post('/stores-without-deliveries', getStoresWithoutDeliveries); 
 
 // Future routes for other reports:
 // router.get('/warehouse-inventory', getWarehouseInventory);

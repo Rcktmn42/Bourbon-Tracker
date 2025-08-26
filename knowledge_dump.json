@@ -1,0 +1,538 @@
+{
+  "tables": {
+    "sqlite_sequence": "CREATE TABLE sqlite_sequence(name,seq)",
+    "stores": "CREATE TABLE stores (store_id INTEGER PRIMARY KEY AUTOINCREMENT, store_number TEXT UNIQUE ON CONFLICT ABORT, address TEXT UNIQUE, region TEXT, nickname TEXT, delivery_interval_days INTEGER, last_delivery_date DATE, mixed_beverage INTEGER NOT NULL DEFAULT 0)",
+    "warehouse_inventory_history_v2": "CREATE TABLE warehouse_inventory_history_v2 (\n    history_id INTEGER PRIMARY KEY AUTOINCREMENT,\n    nc_code TEXT NOT NULL,\n    check_date DATE NOT NULL,\n    total_available INTEGER,\n    listing_type TEXT,\n    supplier_allotment INTEGER,\n    FOREIGN KEY (nc_code) REFERENCES \"alcohol_old\"(nc_code),\n    UNIQUE (nc_code, check_date)\n)",
+    "boards": "CREATE TABLE boards (\n  board_id   INTEGER PRIMARY KEY AUTOINCREMENT,\n  board_name TEXT    UNIQUE NOT NULL\n)",
+    "shipments_history": "CREATE TABLE shipments_history (\n  shipment_id   INTEGER PRIMARY KEY AUTOINCREMENT,\n  nc_code       TEXT    NOT NULL,\n  board_id      INTEGER NOT NULL,\n  ship_date     DATE    NOT NULL,\n  num_units     INTEGER NOT NULL,\n  FOREIGN KEY(board_id) REFERENCES boards(board_id),\n  UNIQUE(nc_code, board_id, ship_date)\n)",
+    "alcohol": "CREATE TABLE alcohol (\n      alcohol_id        INTEGER PRIMARY KEY AUTOINCREMENT,\n      nc_code           INTEGER UNIQUE NOT NULL,\n      brand_name        TEXT,\n      size_ml           INTEGER,\n      cases_per_pallet  INTEGER,\n      supplier          TEXT,\n      broker_name       TEXT,\n      first_seen_date   DATE,\n      image_path        TEXT,\n      Listing_Type      TEXT,\n      style_tags        TEXT,\n      alcohol_type      TEXT,\n      alcohol_subtype   TEXT,\n      retail_price      REAL,\n      bottles_per_case  INTEGER\n    )",
+    "bourbons": "CREATE TABLE bourbons (\n      bourbon_id       INTEGER PRIMARY KEY AUTOINCREMENT,\n      name             TEXT    NOT NULL,\n      plu              INTEGER UNIQUE NOT NULL,\n      last_seeded_date TEXT\n    )",
+    "current_inventory": "CREATE TABLE current_inventory (\n      inventory_id INTEGER PRIMARY KEY AUTOINCREMENT,\n      store_id     INTEGER NOT NULL,\n      bourbon_id   INTEGER,\n      plu          INTEGER NOT NULL,\n      quantity     INTEGER,\n      last_updated TEXT,\n      UNIQUE(store_id,plu),\n      FOREIGN KEY(store_id)   REFERENCES stores(store_id),\n      FOREIGN KEY(bourbon_id) REFERENCES bourbons(bourbon_id)\n    )",
+    "inventory_history": "CREATE TABLE inventory_history (\n      history_id INTEGER PRIMARY KEY AUTOINCREMENT,\n      store_id   INTEGER NOT NULL,\n      bourbon_id INTEGER,\n      plu        INTEGER NOT NULL,\n      quantity   INTEGER,\n      check_time TEXT,\n      FOREIGN KEY(store_id)   REFERENCES stores(store_id),\n      FOREIGN KEY(bourbon_id) REFERENCES bourbons(bourbon_id)\n    )"
+  },
+  "foreign_keys": [
+    {
+      "table": "warehouse_inventory_history_v2",
+      "id": 0,
+      "seq": 0,
+      "ref_table": "alcohol_old",
+      "from_column": "nc_code",
+      "to_column": "nc_code",
+      "on_update": "NO ACTION",
+      "on_delete": "NO ACTION",
+      "match": "NONE"
+    },
+    {
+      "table": "shipments_history",
+      "id": 0,
+      "seq": 0,
+      "ref_table": "boards",
+      "from_column": "board_id",
+      "to_column": "board_id",
+      "on_update": "NO ACTION",
+      "on_delete": "NO ACTION",
+      "match": "NONE"
+    },
+    {
+      "table": "current_inventory",
+      "id": 0,
+      "seq": 0,
+      "ref_table": "bourbons",
+      "from_column": "bourbon_id",
+      "to_column": "bourbon_id",
+      "on_update": "NO ACTION",
+      "on_delete": "NO ACTION",
+      "match": "NONE"
+    },
+    {
+      "table": "current_inventory",
+      "id": 1,
+      "seq": 0,
+      "ref_table": "stores",
+      "from_column": "store_id",
+      "to_column": "store_id",
+      "on_update": "NO ACTION",
+      "on_delete": "NO ACTION",
+      "match": "NONE"
+    },
+    {
+      "table": "inventory_history",
+      "id": 0,
+      "seq": 0,
+      "ref_table": "bourbons",
+      "from_column": "bourbon_id",
+      "to_column": "bourbon_id",
+      "on_update": "NO ACTION",
+      "on_delete": "NO ACTION",
+      "match": "NONE"
+    },
+    {
+      "table": "inventory_history",
+      "id": 1,
+      "seq": 0,
+      "ref_table": "stores",
+      "from_column": "store_id",
+      "to_column": "store_id",
+      "on_update": "NO ACTION",
+      "on_delete": "NO ACTION",
+      "match": "NONE"
+    }
+  ],
+  "samples": {
+    "stores": {
+      "columns": [
+        "store_id",
+        "store_number",
+        "address",
+        "region",
+        "nickname",
+        "delivery_interval_days",
+        "last_delivery_date",
+        "mixed_beverage"
+      ],
+      "rows": [
+        [
+          1,
+          "1",
+          "7200 Sandy Fork Rd.Raleigh, NC 27609",
+          "North",
+          "SF",
+          null,
+          null,
+          1
+        ],
+        [
+          2,
+          "10",
+          "2645 Appliance Ct.Raleigh, NC 27604",
+          "Central",
+          "Appliance",
+          null,
+          null,
+          0
+        ],
+        [
+          3,
+          "11",
+          "3320 Olympia Dr.Raleigh, NC 27603",
+          "South",
+          "Olympia",
+          null,
+          null,
+          1
+        ],
+        [
+          4,
+          "12",
+          "1793 West Williams St.Apex, NC 27502",
+          "West",
+          "W. Williams",
+          null,
+          null,
+          1
+        ],
+        [
+          5,
+          "13",
+          "1940 Cinema Dr.Fuquay Varina, NC 27526",
+          "South",
+          "Fuquay",
+          null,
+          null,
+          1
+        ]
+      ]
+    },
+    "warehouse_inventory_history_v2": {
+      "columns": [
+        "history_id",
+        "nc_code",
+        "check_date",
+        "total_available",
+        "listing_type",
+        "supplier_allotment"
+      ],
+      "rows": [
+        [
+          1,
+          "46822",
+          "2021-08-01",
+          0,
+          null,
+          224
+        ],
+        [
+          2,
+          "46549",
+          "2021-08-01",
+          0,
+          null,
+          660
+        ],
+        [
+          3,
+          "49369",
+          "2021-08-01",
+          39,
+          null,
+          420
+        ],
+        [
+          4,
+          "44041",
+          "2021-08-01",
+          318,
+          null,
+          450
+        ],
+        [
+          5,
+          "19730",
+          "2021-08-01",
+          0,
+          null,
+          0
+        ]
+      ]
+    },
+    "boards": {
+      "columns": [
+        "board_id",
+        "board_name"
+      ],
+      "rows": [
+        [
+          1,
+          "Alamance Municipal ABC Board"
+        ],
+        [
+          2,
+          "Albemarle ABC Board"
+        ],
+        [
+          3,
+          "Alexander County ABC Board"
+        ],
+        [
+          4,
+          "Andrews ABC Board"
+        ],
+        [
+          5,
+          "Angier ABC Board"
+        ]
+      ]
+    },
+    "shipments_history": {
+      "columns": [
+        "shipment_id",
+        "nc_code",
+        "board_id",
+        "ship_date",
+        "num_units"
+      ],
+      "rows": [
+        [
+          1,
+          "00026",
+          155,
+          "2025-07-07",
+          6
+        ],
+        [
+          2,
+          "00026",
+          147,
+          "2025-07-07",
+          6
+        ],
+        [
+          3,
+          "00026",
+          94,
+          "2025-07-07",
+          6
+        ],
+        [
+          4,
+          "00026",
+          72,
+          "2025-07-07",
+          6
+        ],
+        [
+          5,
+          "00026",
+          45,
+          "2025-07-07",
+          12
+        ]
+      ]
+    },
+    "alcohol": {
+      "columns": [
+        "alcohol_id",
+        "nc_code",
+        "brand_name",
+        "size_ml",
+        "cases_per_pallet",
+        "supplier",
+        "broker_name",
+        "first_seen_date",
+        "image_path",
+        "Listing_Type",
+        "style_tags",
+        "alcohol_type",
+        "alcohol_subtype",
+        "retail_price",
+        "bottles_per_case"
+      ],
+      "rows": [
+        [
+          1,
+          124,
+          "WhistlePig 15Y",
+          750,
+          180,
+          "WhistlePig",
+          "Barry Sessoms",
+          "2021-08-01",
+          "alcohol_images/15996.jpg",
+          "Listed",
+          null,
+          null,
+          null,
+          299.95,
+          3
+        ],
+        [
+          2,
+          131,
+          "Smooth Ambler Old Scout Bourbon",
+          750,
+          96,
+          "Pernod Ricard USA",
+          "Jack Wooten",
+          "2021-08-01",
+          "alcohol_images/17036.jpg",
+          "Listed",
+          null,
+          null,
+          null,
+          34.95,
+          6
+        ],
+        [
+          3,
+          137,
+          "Hatozaki Small Batch Japanese Whisky",
+          750,
+          120,
+          "Marussia Beverages USA",
+          "Lauren Wiseman",
+          "2021-08-01",
+          "no image available",
+          "Listed",
+          null,
+          null,
+          null,
+          59.95,
+          6
+        ],
+        [
+          4,
+          204,
+          "The Macallan Double Cask 18Y",
+          750,
+          60,
+          "Edrington Americas",
+          "Lauren Wiseman",
+          "2021-08-01",
+          "alcohol_images/15508.jpg",
+          "Listed",
+          null,
+          null,
+          null,
+          379.95,
+          3
+        ],
+        [
+          5,
+          215,
+          "GlenDronach 12Y S.M.",
+          750,
+          100,
+          "Brown - Forman",
+          "Lauren Wiseman",
+          "2021-08-01",
+          "alcohol_images/10942.jpg",
+          "Listed",
+          null,
+          null,
+          null,
+          69.95,
+          6
+        ]
+      ]
+    },
+    "bourbons": {
+      "columns": [
+        "bourbon_id",
+        "name",
+        "plu",
+        "last_seeded_date"
+      ],
+      "rows": [
+        [
+          1,
+          "E.H. TAYLOR SINGLE BARREL BOUR",
+          20192,
+          "04/09/2025"
+        ],
+        [
+          2,
+          "E.H. TAYLOR JR. SMALL BATCH",
+          20581,
+          "04/09/2025"
+        ],
+        [
+          3,
+          "E.H. TAYLOR STRGT RYE WHIS",
+          20582,
+          "04/09/2025"
+        ],
+        [
+          4,
+          "E.H. TAYLOR JR. BARREL PROOF",
+          25071,
+          "04/09/2025"
+        ],
+        [
+          5,
+          "STAGG JR. (BTB)",
+          19318,
+          "03/12/2025"
+        ]
+      ]
+    },
+    "current_inventory": {
+      "columns": [
+        "inventory_id",
+        "store_id",
+        "bourbon_id",
+        "plu",
+        "quantity",
+        "last_updated"
+      ],
+      "rows": [
+        [
+          65,
+          1,
+          3,
+          20582,
+          0,
+          "2025-08-03T20:37:54"
+        ],
+        [
+          66,
+          11,
+          7,
+          20595,
+          0,
+          "2025-08-03T20:37:55"
+        ],
+        [
+          67,
+          3,
+          26,
+          27090,
+          0,
+          "2025-08-03T20:38:31"
+        ],
+        [
+          68,
+          3,
+          36,
+          20611,
+          0,
+          "2025-08-03T20:38:08"
+        ],
+        [
+          69,
+          10,
+          36,
+          20611,
+          23,
+          "2025-08-15T09:45:38"
+        ]
+      ]
+    },
+    "inventory_history": {
+      "columns": [
+        "history_id",
+        "store_id",
+        "bourbon_id",
+        "plu",
+        "quantity",
+        "check_time"
+      ],
+      "rows": [
+        [
+          1,
+          23,
+          38,
+          18366,
+          102,
+          "2025-02-03 21:37:17.199009"
+        ],
+        [
+          3,
+          6,
+          7,
+          20595,
+          18,
+          "2025-02-06 18:01:19.225849"
+        ],
+        [
+          4,
+          7,
+          7,
+          20595,
+          18,
+          "2025-02-06 18:01:19.234848"
+        ],
+        [
+          5,
+          18,
+          7,
+          20595,
+          16,
+          "2025-02-06 18:01:19.248848"
+        ],
+        [
+          6,
+          23,
+          7,
+          20595,
+          17,
+          "2025-02-06 18:01:19.256849"
+        ]
+      ]
+    }
+  },
+  "metadata": {
+    "bourbons": "List of tracked bourbons: bourbon_id PK, name, plu, last_seeded_data",
+    "stores": "Stores table: store_id PK, store_number, address, region, nickname",
+    "current_inventory": "Latest on-shelf quantities: inventory_id PK, store_id FK\u2192stores.store_id, bourbon_id FK\u2192bourbons.bourbon_id, quantity, last_updated",
+    "inventory_history": "Historical snapshot of inventory checks: history_id PK, store_id FK, bourbon_id FK, quantity, check_time",
+    "warehouse_inventory_history_v2": "State-warehouse inventory: PLU-linked, daily check_date and quantity",
+    "shipments_hsitory": "History of shipments from state warehouse to local abc boards: nc_code is PLU, board_id linked to board_id in boards table, num_units is bottles",
+    "boards": "list of NC Local bc boards: board_id and board _name"
+  },
+  "reports": {
+    "missing_stores_last_3_weeks": {
+      "description": "Script find_missing_stores.py \u2192 list stores with no record of a bourbon in last 3 weeks",
+      "script": "find_missing_stores.py"
+    }
+  }
+}

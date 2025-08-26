@@ -5,8 +5,7 @@ import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 import { readFileSync } from 'fs';
 
-dotenv.config();
-
+/* dotenv.config(); */
 // Get current directory for template paths
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -23,9 +22,10 @@ class EmailService {
       }
     });
 
-    this.fromName = process.env.EMAIL_FROM_NAME || 'NC Bourbon Tracker';
+    this.fromName = process.env.EMAIL_FROM_NAME || 'WakePour';
     this.fromAddress = process.env.EMAIL_FROM_ADDRESS || process.env.EMAIL_USER;
     this.adminEmail = process.env.ADMIN_EMAIL || process.env.EMAIL_USER;
+    this.siteUrl = process.env.FRONTEND_URL || 'https://wakepour.com';
   }
 
   /**
@@ -88,7 +88,38 @@ class EmailService {
   }
 
   /**
-   * Send welcome email to new user
+   * Generate a 6-digit verification code
+   * @returns {string} 6-digit numeric code
+   */
+  generateVerificationCode() {
+    return Math.floor(100000 + Math.random() * 900000).toString();
+  }
+
+  /**
+   * Send email verification code to new user
+   * @param {string} userEmail - User's email address
+   * @param {string} firstName - User's first name
+   * @param {string} verificationCode - 6-digit verification code
+   * @returns {object} Email send result
+   */
+  async sendVerificationEmail(userEmail, firstName, verificationCode) {
+    const html = this.loadTemplate('email-verification', {
+      firstName: firstName,
+      siteName: this.fromName,
+      verificationCode: verificationCode,
+      supportEmail: this.adminEmail,
+      email: userEmail
+    });
+
+    return await this.sendEmail({
+      to: userEmail,
+      subject: 'Verify Your Email - WakePour',
+      html
+    });
+  }
+
+  /**
+   * Send welcome email to new user (called after email verification)
    * @param {string} userEmail - User's email address
    * @param {string} firstName - User's first name
    * @returns {object} Email send result
@@ -102,13 +133,13 @@ class EmailService {
 
     return await this.sendEmail({
       to: userEmail,
-      subject: 'Welcome to NC Bourbon Tracker',
+      subject: 'Welcome to WakePour - Account Pending Approval',
       html
     });
   }
 
   /**
-   * Send notification to admin about new user registration
+   * Send notification to admin about new user registration (called after email verification)
    * @param {object} user - User object with registration details
    * @returns {object} Email send result
    */
@@ -139,13 +170,13 @@ class EmailService {
     const html = this.loadTemplate('approval', {
       firstName: firstName,
       siteName: this.fromName,
-      loginUrl: process.env.FRONTEND_URL || 'http://localhost:5173',
+      loginUrl: this.siteUrl,
       supportEmail: this.adminEmail
     });
 
     return await this.sendEmail({
       to: userEmail,
-      subject: 'Your NC Bourbon Tracker Account Has Been Approved!',
+      subject: 'Your WakePour Account Has Been Approved!',
       html
     });
   }
@@ -158,7 +189,7 @@ class EmailService {
    * @returns {object} Email send result
    */
   async sendPasswordResetEmail(userEmail, firstName, resetToken) {
-    const resetUrl = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/reset-password?token=${resetToken}`;
+    const resetUrl = `${this.siteUrl}/reset-password?token=${resetToken}`;
     
     const html = this.loadTemplate('password-reset', {
       firstName: firstName,
@@ -169,7 +200,7 @@ class EmailService {
 
     return await this.sendEmail({
       to: userEmail,
-      subject: 'Password Reset Request - NC Bourbon Tracker',
+      subject: 'Password Reset Request - WakePour',
       html
     });
   }

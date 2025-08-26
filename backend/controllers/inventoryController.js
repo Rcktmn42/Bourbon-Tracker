@@ -185,3 +185,562 @@ export async function getInventorySummary(req, res) {
     });
   }
 }
+
+// ===== NEW FUNCTIONS FOR INVENTORY REPORTS =====
+
+// Get current allocated inventory (for inventory report page)
+export async function getCurrentAllocatedInventory(req, res) {
+  try {
+    const query = `
+      SELECT 
+        COALESCE(b.bourbon_id, a.alcohol_id) as product_id,
+        COALESCE(b.name, a.brand_name) as product_name,
+        COALESCE(b.plu, a.nc_code) as plu,
+        a.retail_price,
+        a.size_ml,
+        a.bottles_per_case,
+        a.image_path,
+        a.Listing_Type,
+        COALESCE(SUM(ci.quantity), 0) as total_bottles,
+        COUNT(CASE WHEN ci.quantity > 0 THEN 1 END) as stores_with_stock
+      FROM alcohol a
+      LEFT JOIN bourbons b ON a.nc_code = b.plu
+      LEFT JOIN current_inventory ci ON COALESCE(b.plu, a.nc_code) = ci.plu
+      WHERE a.Listing_Type IN ('Allocation', 'Limited', 'Barrel')
+      GROUP BY 
+        COALESCE(b.bourbon_id, a.alcohol_id),
+        COALESCE(b.name, a.brand_name),
+        COALESCE(b.plu, a.nc_code),
+        a.retail_price, a.size_ml, a.bottles_per_case, a.image_path, a.Listing_Type
+      HAVING total_bottles > 0
+      ORDER BY product_name COLLATE NOCASE
+    `;
+    
+    const products = await inventoryDb.raw(query);
+    
+    // NEW: Get unique store count across all filtered products
+    const uniqueStoreQuery = `
+      SELECT COUNT(DISTINCT ci.store_id) as unique_stores
+      FROM current_inventory ci
+      JOIN alcohol a ON ci.plu = a.nc_code
+      WHERE a.Listing_Type IN ('Allocation', 'Limited', 'Barrel')
+        AND ci.quantity > 0
+    `;
+    
+    const uniqueStoreResult = await inventoryDb.raw(uniqueStoreQuery);
+    const uniqueStoreCount = uniqueStoreResult[0]?.unique_stores || 0;
+    
+    res.json({ 
+      success: true, 
+      products,
+      summary: {
+        totalProducts: products.length,
+        totalBottles: products.reduce((sum, p) => sum + p.total_bottles, 0),
+        uniqueStores: uniqueStoreCount, // FIXED: Use uniqueStores instead of totalStores
+        totalStoreSlots: products.reduce((sum, p) => sum + p.stores_with_stock, 0) // Optional: Keep old calculation for reference
+      }
+    });
+  } catch (error) {
+    console.error('Error in getCurrentAllocatedInventory:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+}
+
+// Get store inventory for a specific product (for expanding product details)
+export async function getStoreInventoryForProduct(req, res) {
+  try {
+    const { plu } = req.params;
+    
+    const query = `
+      SELECT 
+        ci.store_id,
+        s.store_number,
+        s.nickname,
+        s.address,
+        s.region,
+        s.mixed_beverage,
+        ci.quantity,
+        ci.last_updated
+      FROM current_inventory ci
+      JOIN stores s ON ci.store_id = s.store_id
+      WHERE ci.plu = ? AND ci.quantity > 0
+      ORDER BY s.nickname COLLATE NOCASE
+    `;
+    
+    const stores = await inventoryDb.raw(query, [parseInt(plu)]);
+    res.json({ success: true, stores });
+  } catch (error) {
+    console.error('Error in getStoreInventoryForProduct:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+}
+
+// Search allocated products (for autocomplete/search)
+export async function searchAllocatedProducts(req, res) {
+  try {
+    const { term } = req.params;
+    let query, params;
+    
+    if (/^\d+$/.test(term)) {
+      // PLU search
+      query = `
+        SELECT DISTINCT 
+          COALESCE(b.name, a.brand_name) as name,
+          COALESCE(b.plu, a.nc_code) as plu,
+          a.retail_price,
+          a.Listing_Type
+        FROM alcohol a
+        LEFT JOIN bourbons b ON a.nc_code = b.plu
+        WHERE COALESCE(b.plu, a.nc_code) = ?
+          AND a.Listing_Type IN ('Allocation', 'Limited', 'Barrel')
+      `;
+      params = [parseInt(term)];
+    } else {
+      // Name search
+      query = `
+        SELECT DISTINCT 
+          COALESCE(b.name, a.brand_name) as name,
+          COALESCE(b.plu, a.nc_code) as plu,
+          a.retail_price,
+          a.Listing_Type
+        FROM alcohol a
+        LEFT JOIN bourbons b ON a.nc_code = b.plu
+        WHERE COALESCE(b.name, a.brand_name) LIKE ? COLLATE NOCASE
+          AND a.Listing_Type IN ('Allocation', 'Limited', 'Barrel')
+        ORDER BY name
+        LIMIT 10
+      `;
+      params = [`%${term}%`];
+    }
+    
+    const products = await inventoryDb.raw(query, params);
+    res.json({ success: true, products });
+  } catch (error) {
+    console.error('Error in searchAllocatedProducts:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+}
+
+// Generate delivery analysis (for delivery analysis page) - FIXED VERSION
+export async function generateDeliveryAnalysis(req, res) {
+  try {
+    const { plu, weeksBack = 0, includeOtherDrops = true } = req.body;
+    
+    // Calculate date ranges
+    const { startDate, endDate } = getWeekRange(weeksBack);
+    const { monthStart, monthEnd } = getCurrentMonthRange();
+    
+    // Get product info
+    const productQuery = `
+      SELECT 
+        COALESCE(b.name, a.brand_name) as name,
+        CAST(a.nc_code AS INTEGER) as plu,
+        a.bottles_per_case,
+        a.retail_price,
+        a.size_ml
+      FROM alcohol a
+      LEFT JOIN bourbons b ON a.nc_code = b.plu
+      WHERE a.nc_code = ?
+    `;
+    const productResults = await inventoryDb.raw(productQuery, [plu]);
+    const product = productResults[0];
+    
+    if (!product) {
+      return res.status(404).json({ 
+        success: false, 
+        error: `Product with PLU ${plu} not found` 
+      });
+    }
+    
+    const productInfo = {
+      name: product.name || `PLU ${plu}`,
+      plu: product.plu,
+      bottles_per_case: product.bottles_per_case || 6,
+      retail_price: product.retail_price,
+      size_ml: product.size_ml
+    };
+    
+    // Get deliveries - focus on 'first' and 'up' change types within date range
+    const deliveryQuery = `
+      SELECT 
+        ih.history_id,
+        ih.store_id,
+        s.store_number,
+        s.nickname,
+        s.address,
+        s.region,
+        s.mixed_beverage,
+        ih.quantity,
+        ih.change_type,
+        ih.delta,
+        ih.check_time,
+        DATE(ih.check_time) as delivery_date
+      FROM inventory_history ih
+      JOIN stores s ON ih.store_id = s.store_id
+      WHERE ih.plu = ?
+        AND ih.change_type IN ('first', 'up')
+        AND DATE(ih.check_time) BETWEEN ? AND ?
+        AND ih.quantity > 0
+      ORDER BY ih.check_time, s.nickname
+    `;
+    const deliveries = await inventoryDb.raw(deliveryQuery, [plu, startDate, endDate]);
+    
+    // FIXED: Get monthly shipments from state warehouse - ONLY the latest correction
+    const shipmentQuery = `
+      SELECT num_units as total_bottles
+      FROM shipments_history 
+      WHERE nc_code = ?
+        AND board_id = 155
+        AND DATE(ship_date) BETWEEN ? AND ?
+      ORDER BY shipment_id DESC
+      LIMIT 1
+    `;
+    const shipmentResults = await inventoryDb.raw(shipmentQuery, [plu.toString(), monthStart, monthEnd]);
+    const totalShippedBottles = shipmentResults[0]?.total_bottles || 0;
+    
+    // Get other drop products if requested
+    let storesWithOtherDrops = [];
+    if (includeOtherDrops && deliveries.length >= 0) {
+      // Find other allocated products that had deliveries in this time period
+      const otherDropQuery = `
+        SELECT DISTINCT ih.plu
+        FROM inventory_history ih
+        JOIN alcohol a ON ih.plu = a.nc_code
+        WHERE ih.change_type IN ('first', 'up')
+          AND DATE(ih.check_time) BETWEEN ? AND ?
+          AND ih.plu != ?
+          AND ih.quantity > 0
+          AND a.Listing_Type IN ('Allocation', 'Limited', 'Barrel')
+      `;
+      const otherDropProducts = await inventoryDb.raw(otherDropQuery, [startDate, endDate, plu]);
+      
+      if (otherDropProducts.length > 0) {
+        const deliveredStoreIds = deliveries.map(d => d.store_id);
+        const otherProductPlus = otherDropProducts.map(p => p.plu);
+        
+        // Build dynamic query for stores that got other products but not this one
+        const placeholders = otherProductPlus.map(() => '?').join(',');
+        let excludePlaceholders = '';
+        let excludeParams = [];
+        
+        if (deliveredStoreIds.length > 0) {
+          excludePlaceholders = ` AND ih.store_id NOT IN (${deliveredStoreIds.map(() => '?').join(',')})`;
+          excludeParams = deliveredStoreIds;
+        }
+        
+        // FIXED: Filter to stores that received 2+ different products
+        const otherDropStoreQuery = `
+          SELECT 
+            ih.store_id,
+            s.store_number,
+            s.nickname,
+            s.address,
+            s.region,
+            s.mixed_beverage,
+            GROUP_CONCAT(DISTINCT ih.plu) as received_plus,
+            GROUP_CONCAT(DISTINCT COALESCE(b.name, a.brand_name)) as received_products,
+            COUNT(DISTINCT ih.plu) as product_count
+          FROM inventory_history ih
+          JOIN stores s ON ih.store_id = s.store_id
+          LEFT JOIN bourbons b ON ih.plu = b.plu
+          LEFT JOIN alcohol a ON ih.plu = a.nc_code
+          WHERE ih.change_type IN ('first', 'up')
+            AND DATE(ih.check_time) BETWEEN ? AND ?
+            AND ih.plu IN (${placeholders})
+            AND ih.quantity > 0
+            ${excludePlaceholders}
+          GROUP BY ih.store_id, s.store_number, s.nickname, s.address, s.region, s.mixed_beverage
+          HAVING COUNT(DISTINCT ih.plu) >= 2
+          ORDER BY s.nickname
+        `;
+        
+        const params = [startDate, endDate, ...otherProductPlus, ...excludeParams];
+        storesWithOtherDrops = await inventoryDb.raw(otherDropStoreQuery, params);
+      }
+    }
+    
+    // Calculate summary statistics
+    const summary = {
+      totalDeliveries: deliveries.length,
+      uniqueStores: [...new Set(deliveries.map(d => d.store_id))].length,
+      totalBottlesDelivered: deliveries.reduce((sum, d) => sum + d.quantity, 0),
+      totalCasesDelivered: deliveries.reduce((sum, d) => 
+        sum + Math.ceil(d.quantity / productInfo.bottles_per_case), 0)
+    };
+    
+    res.json({
+      success: true,
+      analysis: {
+        product: productInfo,
+        deliveries,
+        shipmentInfo: {
+          totalBottles: totalShippedBottles,
+          totalCases: Math.ceil(totalShippedBottles / productInfo.bottles_per_case)
+        },
+        storesWithOtherDrops,
+        dateRange: { startDate, endDate },
+        monthRange: { monthStart, monthEnd },
+        summary
+      }
+    });
+    
+  } catch (error) {
+    console.error('Error in generateDeliveryAnalysis:', error);
+    res.status(500).json({ 
+      success: false, 
+      error: 'Failed to generate delivery analysis',
+      details: error.message 
+    });
+  }
+}
+
+// FIXED: Get stores without deliveries with accurate count
+export async function getStoresWithoutDeliveries(req, res) {
+  try {
+    const { deliveredStoreIds = [], otherDropStoreIds = [] } = req.body;
+    
+    // Combine all store IDs that should be excluded
+    const excludedStoreIds = [...new Set([...deliveredStoreIds, ...otherDropStoreIds])];
+    
+    let query = `
+      SELECT 
+        store_id,
+        store_number,
+        nickname,
+        address,
+        region,
+        mixed_beverage
+      FROM stores
+    `;
+    
+    let params = [];
+    
+    if (excludedStoreIds.length > 0) {
+      const placeholders = excludedStoreIds.map(() => '?').join(',');
+      query += ` WHERE store_id NOT IN (${placeholders})`;
+      params = excludedStoreIds;
+    }
+    
+    query += ` ORDER BY nickname COLLATE NOCASE`;
+    
+    const stores = await inventoryDb.raw(query, params);
+    
+    res.json({ 
+      success: true, 
+      stores,
+      summary: {
+        totalStores: stores.length,
+        excludedStores: excludedStoreIds.length
+      }
+    });
+  } catch (error) {
+    console.error('Error in getStoresWithoutDeliveries:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+}
+
+// NEW: Get warehouse inventory
+export async function getWarehouseInventory(req, res) {
+  try {
+    const query = `
+      SELECT 
+        wih.nc_code as plu,
+        COALESCE(b.name, a.brand_name) as product_name,
+        a.retail_price,
+        a.size_ml,
+        a.bottles_per_case,
+        a.Listing_Type,
+        wih.total_available,
+        wih.listing_type as warehouse_listing_type,
+        wih.supplier_allotment,
+        wih.check_date
+      FROM warehouse_inventory_history_v2 wih
+      LEFT JOIN alcohol a ON wih.nc_code = a.nc_code
+      LEFT JOIN bourbons b ON wih.nc_code = b.plu
+      WHERE wih.check_date = (
+        SELECT MAX(check_date) 
+        FROM warehouse_inventory_history_v2 
+        WHERE nc_code = wih.nc_code
+      )
+      AND wih.total_available > 0
+      ORDER BY COALESCE(b.name, a.brand_name) COLLATE NOCASE
+    `;
+    
+    const inventory = await inventoryDb.raw(query);
+    res.json({ success: true, inventory });
+  } catch (error) {
+    console.error('Error in getWarehouseInventory:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+}
+
+// NEW: Get shipments
+export async function getShipments(req, res) {
+  try {
+    const { startDate, endDate, boardId } = req.query;
+    
+    let query = `
+      SELECT 
+        sh.shipment_id,
+        sh.nc_code as plu,
+        COALESCE(b.name, a.brand_name) as product_name,
+        sh.ship_date,
+        sh.num_units,
+        b.board_name,
+        a.retail_price
+      FROM shipments_history sh
+      LEFT JOIN boards b ON sh.board_id = b.board_id
+      LEFT JOIN alcohol a ON sh.nc_code = a.nc_code
+      LEFT JOIN bourbons bour ON sh.nc_code = bour.plu
+      WHERE 1=1
+    `;
+    
+    const params = [];
+    
+    if (startDate) {
+      query += ` AND DATE(sh.ship_date) >= ?`;
+      params.push(startDate);
+    }
+    
+    if (endDate) {
+      query += ` AND DATE(sh.ship_date) <= ?`;
+      params.push(endDate);
+    }
+    
+    if (boardId) {
+      query += ` AND sh.board_id = ?`;
+      params.push(parseInt(boardId));
+    }
+    
+    query += ` ORDER BY sh.ship_date DESC, product_name COLLATE NOCASE`;
+    
+    const shipments = await inventoryDb.raw(query, params);
+    res.json({ success: true, shipments });
+  } catch (error) {
+    console.error('Error in getShipments:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+}
+
+// NEW: Get store inventory
+export async function getStoreInventory(req, res) {
+  try {
+    const { storeId } = req.params;
+    
+    const query = `
+      SELECT 
+        ci.plu,
+        COALESCE(b.name, a.brand_name) as product_name,
+        ci.quantity,
+        ci.last_updated,
+        a.retail_price,
+        a.size_ml,
+        a.Listing_Type,
+        s.store_number,
+        s.nickname,
+        s.address
+      FROM current_inventory ci
+      LEFT JOIN bourbons b ON ci.plu = b.plu
+      LEFT JOIN alcohol a ON ci.plu = a.nc_code
+      JOIN stores s ON ci.store_id = s.store_id
+      WHERE ci.store_id = ? AND ci.quantity > 0
+      ORDER BY product_name COLLATE NOCASE
+    `;
+    
+    const inventory = await inventoryDb.raw(query, [parseInt(storeId)]);
+    res.json({ success: true, inventory });
+  } catch (error) {
+    console.error('Error in getStoreInventory:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+}
+
+// NEW: Get product history
+export async function getProductHistory(req, res) {
+  try {
+    const { plu } = req.params;
+    const { limit = 100 } = req.query;
+    
+    const query = `
+      SELECT 
+        ih.history_id,
+        ih.store_id,
+        s.store_number,
+        s.nickname,
+        ih.quantity,
+        ih.change_type,
+        ih.delta,
+        ih.check_time
+      FROM inventory_history ih
+      JOIN stores s ON ih.store_id = s.store_id
+      WHERE ih.plu = ?
+      ORDER BY ih.check_time DESC
+      LIMIT ?
+    `;
+    
+    const history = await inventoryDb.raw(query, [parseInt(plu), parseInt(limit)]);
+    res.json({ success: true, history });
+  } catch (error) {
+    console.error('Error in getProductHistory:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+}
+
+// Helper functions for date calculations
+function getWeekRange(weeksBack = 0) {
+  const today = new Date();
+  
+  if (weeksBack === 0) {
+    // Current analysis: last complete week + this week if in progress
+    const dayOfWeek = today.getDay(); // 0=Sunday, 1=Monday, ..., 6=Saturday
+    const daysToLastFriday = dayOfWeek === 0 ? 2 : (dayOfWeek + 2) % 7;
+    
+    const lastFriday = new Date(today);
+    lastFriday.setDate(today.getDate() - daysToLastFriday);
+    
+    const lastMonday = new Date(lastFriday);
+    lastMonday.setDate(lastFriday.getDate() - 4);
+    
+    // If we're in a weekday, extend to today
+    let endDate;
+    if (dayOfWeek >= 1 && dayOfWeek <= 5) { // Monday-Friday
+      endDate = today.toISOString().split('T')[0];
+    } else {
+      endDate = lastFriday.toISOString().split('T')[0];
+    }
+    
+    return {
+      startDate: lastMonday.toISOString().split('T')[0],
+      endDate
+    };
+  } else {
+    // Historical weeks
+    const dayOfWeek = today.getDay();
+    const daysToLastFriday = dayOfWeek === 0 ? 2 : (dayOfWeek + 2) % 7;
+    
+    const recentFriday = new Date(today);
+    recentFriday.setDate(today.getDate() - daysToLastFriday);
+    
+    const targetFriday = new Date(recentFriday);
+    targetFriday.setDate(recentFriday.getDate() - (weeksBack * 7));
+    
+    const targetMonday = new Date(targetFriday);
+    targetMonday.setDate(targetFriday.getDate() - 4);
+    
+    return {
+      startDate: targetMonday.toISOString().split('T')[0],
+      endDate: targetFriday.toISOString().split('T')[0]
+    };
+  }
+}
+
+function getCurrentMonthRange() {
+  const today = new Date();
+  const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
+  const lastDay = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+  
+  return {
+    monthStart: firstDay.toISOString().split('T')[0],
+    monthEnd: lastDay.toISOString().split('T')[0]
+  };
+}

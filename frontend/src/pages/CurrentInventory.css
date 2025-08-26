@@ -1,0 +1,391 @@
+/* frontend/src/pages/CurrentInventory.css */
+
+/* Full viewport background - matches Home.css exactly */
+.current-inventory {
+  min-height: calc(100vh - 4rem); /* subtract header height */
+  width: 100vw;
+  background-image: url('/images/home-bg.jpg');
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  position: relative;
+  z-index: 1;
+  margin: 0;
+  padding: 1rem; /* Add padding for mobile */
+}
+
+/* White card container - matches Home.css structure */
+.inventory-container {
+  background: rgba(255, 255, 255, 0.9);
+  padding: 2rem;
+  border-radius: 16px;
+  text-align: center;
+  max-width: 1200px; /* Wider than home for more content */
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  width: 100%;
+}
+
+.inventory-header {
+  margin-bottom: 2rem;
+}
+
+.inventory-header h1 {
+  color: #3D2B1F; /* Match home page color */
+  margin-bottom: 1rem;
+  font-size: 2rem;
+}
+
+.last-updated {
+  color: #5A3E1B; /* Match home page secondary color */
+  font-size: 1rem;
+  margin: 0;
+}
+
+.inventory-content {
+  text-align: left; /* Content should be left-aligned inside the container */
+}
+
+.search-container {
+  position: sticky;
+  top: 20px;
+  z-index: 100;
+  margin-bottom: 2rem;
+  position: relative;
+}
+
+.search-input {
+  width: 100%;
+  padding: 15px 50px 15px 15px;
+  font-size: 16px;
+  border: 2px solid #d7cfc8;
+  border-radius: 8px;
+  transition: border-color 0.3s;
+  box-sizing: border-box;
+}
+
+.search-input:focus {
+  outline: none;
+  border-color: #6a451f;
+}
+
+.search-icon {
+  position: absolute;
+  right: 15px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #6b5a4a;
+  pointer-events: none;
+}
+
+.summary-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.summary-item {
+  text-align: center;
+  padding: 1.5rem;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+  border-left: 4px solid #6a451f;
+}
+
+.summary-number {
+  font-size: 2em;
+  font-weight: bold;
+  color: #5A3E1B;
+}
+
+.summary-label {
+  margin-top: 5px;
+  color: #6b5a4a;
+}
+
+.product-list {
+  display: grid;
+  gap: 15px;
+}
+
+.product-card {
+  border: 1px solid #d7cfc8;
+  border-radius: 8px;
+  overflow: hidden;
+  background: white;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.product-header {
+  background: #f8f6f4;
+  border: none;
+  width: 100%;
+  text-align: left;
+  padding: 16px;
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  transition: background-color 0.2s;
+}
+
+.product-header:hover {
+  background: #f0ede8;
+}
+
+.product-header.active {
+  background: #6a451f;
+  color: white;
+}
+
+.product-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.product-name {
+  font-weight: 600;
+  font-size: 1.1em;
+  margin-bottom: 4px;
+}
+
+.product-details {
+  font-size: 0.9em;
+  color: #6b5a4a;
+}
+
+.product-header.active .product-details {
+  color: #e8e2d8;
+}
+
+.listing-badge {
+  display: inline-block;
+  padding: 2px 6px;
+  border-radius: 3px;
+  font-size: 0.8em;
+  margin-left: 8px;
+  color: white;
+}
+
+.listing-badge.allocation {
+  background: #8B4513;
+}
+
+.listing-badge.limited {
+  background: #A0522D;
+}
+
+.listing-badge.barrel {
+  background: #D2691E;
+}
+
+.listing-badge.unknown {
+  background: #6b5a4a;
+}
+
+.product-summary {
+  text-align: right;
+  margin-left: 16px;
+  flex-shrink: 0;
+}
+
+.bottles-count {
+  font-weight: bold;
+  font-size: 1.1em;
+  color: #5A3E1B;
+}
+
+.product-header.active .bottles-count {
+  color: white;
+}
+
+.stores-count {
+  font-size: 0.85em;
+  color: #6b5a4a;
+}
+
+.product-header.active .stores-count {
+  color: #e8e2d8;
+}
+
+.expand-icon {
+  transition: transform 0.3s ease;
+  font-weight: bold;
+  margin-left: 12px;
+}
+
+.expand-icon.rotated {
+  transform: rotate(180deg);
+}
+
+.product-content {
+  padding: 16px;
+  border-top: 1px solid #d7cfc8;
+  background: white;
+}
+
+.store-grid {
+  display: grid;
+  gap: 8px;
+}
+
+.store-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #f8f6f4;
+  padding: 12px;
+  border-radius: 4px;
+  border-left: 4px solid #6a451f;
+}
+
+.store-item.mixed {
+  border-left-color: #8B4513;
+}
+
+.store-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.store-name {
+  font-weight: 600;
+  margin-bottom: 2px;
+}
+
+.store-details {
+  font-size: 0.85em;
+  color: #6b5a4a;
+}
+
+.mixed-badge {
+  background: #8B4513;
+  color: white;
+  padding: 2px 6px;
+  border-radius: 3px;
+  font-size: 0.8em;
+  margin-left: 8px;
+}
+
+.quantity-badge {
+  background: #6a451f;
+  color: white;
+  padding: 8px 12px;
+  border-radius: 4px;
+  font-weight: bold;
+  margin-left: 12px;
+  flex-shrink: 0;
+}
+
+.loading-stores {
+  text-align: center;
+  padding: 20px;
+  color: #6b5a4a;
+}
+
+.no-results {
+  text-align: center;
+  padding: 40px;
+  color: #6b5a4a;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.disclaimer {
+  background: #f8f6f4;
+  border-left: 4px solid #6b5a4a;
+  padding: 20px;
+  margin-top: 30px;
+  border-radius: 4px;
+}
+
+.disclaimer h3 {
+  color: #5A3E1B;
+  margin-top: 0;
+}
+
+.disclaimer p {
+  color: #6b5a4a;
+  line-height: 1.5;
+  margin-bottom: 10px;
+}
+
+.inventory-loading, .inventory-error {
+  text-align: center;
+  padding: 40px;
+}
+
+.loading-spinner {
+  border: 4px solid #f3f3f3;
+  border-top: 4px solid #6a451f;
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  animation: spin 1s linear infinite;
+  margin: 0 auto 20px;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.retry-button {
+  background: #6a451f;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 16px;
+}
+
+.retry-button:hover {
+  background: #5A3E1B;
+}
+
+/* Mobile Responsive */
+@media (max-width: 768px) {
+  .current-inventory {
+    padding: 0.5rem;
+  }
+  
+  .inventory-container {
+    padding: 1.5rem;
+    max-width: 100%;
+  }
+  
+  .inventory-header h1 {
+    font-size: 1.75rem;
+  }
+  
+  .summary-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1rem;
+  }
+  
+  .product-header {
+    padding: 12px;
+  }
+  
+  .product-content {
+    padding: 12px;
+  }
+  
+  .store-item {
+    padding: 8px;
+  }
+}
+
+@media (max-width: 480px) {
+  .inventory-container {
+    padding: 1rem;
+  }
+  
+  .inventory-header h1 {
+    font-size: 1.5rem;
+  }
+}

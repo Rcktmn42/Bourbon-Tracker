@@ -79,6 +79,11 @@ export default function Login() {
   return (
     <div className="login-page">
       <form className="login-form" onSubmit={handleSubmit} noValidate>
+        {/* Logo inside the form */}
+        <div className="login-logo">
+          <img src="/images/wakepour-logo3.png" alt="WakePour" />
+        </div>
+        
         <h2>Login</h2>
 
         {/* Enhanced error display with different types */}

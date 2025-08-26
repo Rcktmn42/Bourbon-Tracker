@@ -1,26 +1,37 @@
 /* frontend/src/pages/TodaysArrivals.css */
 
 .arrivals-page {
-  min-height: 100vh;
+  min-height: calc(100vh - 4rem); /* Account for header */
+  /* width: 100vw; */
   background-image: url('/images/home-bg.jpg');
-  background-size: cover;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  position: relative;
+  z-index: 1;
+  /* background-size: cover;
   background-position: center;
   background-attachment: fixed;
-  padding: 2rem 1rem;
+  padding: 0 1rem 2rem;
+  margin: 0; /* Reset margin */
+  padding: 1rem; /* Add padding for mobile */
 }
 
 .arrivals-container {
-  max-width: 1200px;
-  margin: 0 auto;
   background: rgba(255, 255, 255, 0.95);
-  backdrop-filter: blur(2px);
+  padding: 2rem;
   border-radius: 16px;
+  text-align: center;
+  max-width: 600px;
+  backdrop-filter: blur(2px);
   box-shadow: 0 12px 32px rgba(0, 0, 0, 0.25);
   overflow: hidden;
 }
 
 /* Header */
 .arrivals-header {
+  border-radius: 12px;
   padding: 2rem;
   border-bottom: 2px solid #6a451f;
   background: linear-gradient(180deg, rgba(255,255,255,0.95), rgba(255,255,255,0.8));
@@ -93,11 +104,11 @@
 
 /* Content */
 .arrivals-content {
-  padding: 2rem;
+  padding: 1rem;
 }
 
 .bourbon-group {
-  margin-bottom: 3rem;
+  margin-bottom: 1rem;  
   border: 1px solid #e0d5c7;
   border-radius: 12px;
   overflow: hidden;
@@ -220,7 +231,8 @@
 /* Responsive Design */
 @media (max-width: 768px) {
   .arrivals-page {
-    padding: 1rem 0.5rem;
+    /* was: padding: 2rem 1rem; */
+    padding: 0 1rem 2rem;
   }
   
   .arrivals-header {

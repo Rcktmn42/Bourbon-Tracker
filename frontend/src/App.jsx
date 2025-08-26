@@ -1,37 +1,34 @@
 // frontend/src/App.jsx
 
-import React, { useEffect, useState } from 'react';
-import {
-  BrowserRouter,
-  Routes,
-  Route,
-  Link,
-  useNavigate,
-  Navigate
-} from 'react-router-dom';
-import { useAuth } from './contexts/AuthContext.jsx';
-import PublicLayout from './components/PublicLayout.jsx';
-import Login from './pages/Login.jsx';
-import Register from './pages/Register.jsx';
-import Admin from './pages/Admin.jsx';
-import Home from './pages/Home.jsx';
-import Profile from './pages/Profile.jsx';
-import TodaysArrivals from './pages/TodaysArrivals.jsx';
+import React from 'react';
+import { BrowserRouter as Router, Routes, Route, Navigate, Link } from 'react-router-dom';
+import { useAuth } from './contexts/AuthContext';
+
+// Existing imports
+import Login from './pages/Login';
+import Register from './pages/Register';
+import Home from './pages/Home';
+import Admin from './pages/Admin';
+import Profile from './pages/Profile';
+
+// NEW IMPORTS - Add these
+import TodaysArrivals from './pages/TodaysArrivals';
+import CurrentInventory from './pages/CurrentInventory';
+import DeliveryAnalysis from './pages/DeliveryAnalysis';
+
+// EMAIL VERIFICATION IMPORTS - Add these new imports
+import EmailVerification from './pages/EmailVerification';
+import VerificationSuccess from './pages/VerificationSuccess';
+
+// Your existing CSS imports
 import './App.css';
 
-// Authenticated Layout - Full app experience
 function AuthenticatedLayout({ children }) {
-  const navigate = useNavigate();
-  const { user, loading, logout } = useAuth();
+  const { user, logout } = useAuth();
 
   const handleLogout = async () => {
     await logout();
-    navigate('/login', { replace: true });
   };
-
-  if (loading) {
-    return <p>Loading…</p>;
-  }
 
   return (
     <>
@@ -42,6 +39,7 @@ function AuthenticatedLayout({ children }) {
             {user && (user.role === 'admin' || user.role === 'power_user') && (
               <Link to="/admin">Admin</Link>
             )}
+            {/* REMOVED - Current Inventory and Historical Trends links */}
             <Link to="/profile">Profile</Link>
           </div>
           <div className="nav-right">
@@ -54,91 +52,128 @@ function AuthenticatedLayout({ children }) {
           </div>
         </nav>
       </header>
-
-      <main className="main-content">{children}</main>
+      <main className="main-content">
+        <div className="authenticated-container">
+          {children}
+        </div>
+      </main>
     </>
   );
 }
 
-// Main App Component
-export default function App() {
-  const [status, setStatus] = useState('Loading…');
-
-  useEffect(() => {
-    fetch('/health')
-      .then(res => res.json())
-      .then(data => setStatus(data.status))
-      .catch(() => setStatus('Error'));
-  }, []);
-
+function PublicLayout({ children }) {
   return (
-    <BrowserRouter>
-      <AppContent status={status} />
-    </BrowserRouter>
+    <div className="public-layout">
+      <div className="public-background">
+        <div className="public-content">
+          {children}
+        </div>
+      </div>
+    </div>
   );
 }
 
-// Separate component to use auth context inside Router
-function AppContent({ status }) {
+function App() {
   const { user, loading } = useAuth();
 
-  // Show loading while checking authentication
   if (loading) {
     return (
-      <div style={{ 
-        display: 'flex', 
-        justifyContent: 'center', 
-        alignItems: 'center', 
-        height: '100vh',
-        fontSize: '1.2rem'
-      }}>
-        Loading...
+      <div className="app-loading">
+        <div className="loading-spinner"></div>
+        <p>Loading...</p>
       </div>
     );
   }
 
-  // If user is not logged in, show public layout with only auth routes
-  if (!user) {
-    return (
-      <PublicLayout>
-        <Routes>
-          <Route path="/login" element={<Login />} />
-          <Route path="/register" element={<Register />} />
-          {/* Redirect any other route to login */}
-          <Route path="*" element={<Navigate to="/login" replace />} />
-        </Routes>
-      </PublicLayout>
-    );
-  }
-
-  // User is logged in, show authenticated layout with all app routes
   return (
-    <AuthenticatedLayout>
-      <Routes>
-        {/* Protected routes - all automatically secured by AuthenticatedLayout */}
-        <Route path="/" element={<Home status={status} />} />
-        <Route path="/profile" element={<Profile />} />
-        <Route path="/todays-arrivals" element={<TodaysArrivals />} />
-                
-        {/* Admin route with role checking */}
-        <Route 
-          path="/admin" 
-          element={
-            user.role === 'admin' || user.role === 'power_user' ? (
-              <Admin />
-            ) : (
-              <Navigate to="/" replace />
-            )
-          } 
-        />
-        
-        {/* Redirect auth routes to home if already logged in */}
-        <Route path="/login" element={<Navigate to="/" replace />} />
-        <Route path="/register" element={<Navigate to="/" replace />} />
-        
-        {/* Catch-all redirect to home */}
-        <Route path="*" element={<Navigate to="/" replace />} />
-      </Routes>
-    </AuthenticatedLayout>
+    <Router>
+      <div className="app">
+        <Routes>
+          {/* Public routes - shown when user is NOT logged in */}
+          {!user ? (
+            <>
+              <Route path="/login" element={
+                <PublicLayout>
+                  <Login />
+                </PublicLayout>
+              } />
+              
+              <Route path="/register" element={
+                <PublicLayout>
+                  <Register />
+                </PublicLayout>
+              } />
+              
+              {/* EMAIL VERIFICATION ROUTES - Add these new routes */}
+              <Route path="/verify-email" element={
+                <PublicLayout>
+                  <EmailVerification />
+                </PublicLayout>
+              } />
+              
+              <Route path="/verification-success" element={
+                <PublicLayout>
+                  <VerificationSuccess />
+                </PublicLayout>
+              } />
+              
+              {/* Redirect all other paths to login */}
+              <Route path="*" element={<Navigate to="/login" replace />} />
+            </>
+          ) : (
+            /* Authenticated routes - shown when user IS logged in */
+            <>
+              {/* Home page */}
+              <Route path="/" element={
+                <AuthenticatedLayout>
+                  <Home />
+                </AuthenticatedLayout>
+              } />
+              
+              {/* Profile page */}
+              <Route path="/profile" element={
+                <AuthenticatedLayout>
+                  <Profile />
+                </AuthenticatedLayout>
+              } />
+              
+              {/* TODAYS ARRIVALS ROUTE */}
+              <Route path="/todays-arrivals" element={
+                <AuthenticatedLayout>
+                  <TodaysArrivals />
+                </AuthenticatedLayout>
+              } />
+              
+              {/* INVENTORY ROUTES */}
+              <Route path="/inventory" element={
+                <AuthenticatedLayout>
+                  <CurrentInventory />
+                </AuthenticatedLayout>
+              } />
+              
+              <Route path="/delivery-analysis" element={
+                <AuthenticatedLayout>
+                  <DeliveryAnalysis />
+                </AuthenticatedLayout>
+              } />
+              
+              {/* Admin route - only for admin/power_user roles */}
+              {(user.role === 'admin' || user.role === 'power_user') && (
+                <Route path="/admin" element={
+                  <AuthenticatedLayout>
+                    <Admin />
+                  </AuthenticatedLayout>
+                } />
+              )}
+              
+              {/* Fallback - redirect unknown paths to home */}
+              <Route path="*" element={<Navigate to="/" replace />} />
+            </>
+          )}
+        </Routes>
+      </div>
+    </Router>
   );
 }
+
+export default App;

@@ -13,79 +13,91 @@ body, html {
   top: 0;
   left: 0;
   width: 100%;
-  background: #f0e6d2;
-  padding: 1rem;
-  box-sizing: border-box;
-  z-index: 100;
-}
-
-/* Flex nav with space between left & right */
-.main-nav {
+  height: var(--header-h, 64px); /* explicit header height */
   display: flex;
-  justify-content: space-between;
   align-items: center;
+  padding: 0;
+  background: #f0e6d2;
+  backdrop-filter: blur(10px);
+  z-index: 1000;
+  border-bottom: 1px solid rgba(140, 107, 61, 0.3);
+  box-sizing: border-box;
 }
 
-.nav-left,
-.nav-right {
+/* Nav row */
+.main-nav,
+.navbar {
   display: flex;
-  gap: 1rem;
-}
-
-/* Push page content below the header */
-.main-content {
-  padding-top: 4rem; /* adjust if your header is taller */
-  /* Remove any backgrounds that could interfere */
-  background: none;
-  /* Ensure full width and height for page backgrounds */
-  width: 100vw;
-  min-height: calc(100vh - 4rem);
-  margin-left: calc(-50vw + 50%); /* Break out of container constraints */
-}
-
-#root {
-  max-width: 1280px; /* Restore original container width for content */
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  width: 100%;
+  max-width: none;
   margin: 0 auto;
-  padding: 2rem;
+  padding: 0 0.5rem;   
+}
+
+/* Left and right sides */
+.nav-left, .nav-right {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+/* Center brand */
+.nav-center {
+  margin: 0 auto;
   text-align: center;
-  background: none; /* Ensure no background here */
+}
+
+.brand {
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  color: #5A3E1B;
+  text-decoration: none;
+}
+
+/* Root container */
+#root {
+  margin: 0;              /* no centering */
+  padding: 0;             /* no global padding */
+  text-align: center;
+  background: none;
   position: relative;
+  width: 100%;            /* full-bleed */
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
 }
 
-.logo {
-  height: 6em;
-  padding: 1.5em;
-  will-change: filter;
-  transition: filter 300ms;
-}
-.logo:hover {
-  filter: drop-shadow(0 0 2em #646cffaa);
-}
-.logo.react:hover {
-  filter: drop-shadow(0 0 2em #61dafbaa);
+/* Main content area: provides SINGLE header clearance */
+.main-content {
+  padding-top: var(--header-h, 64px); /* header clearance */
+  flex: 1;
+  min-height: calc(100vh - var(--header-h, 64px));
+  background: none;
+  box-sizing: border-box;
+  width: 100%;
 }
 
-@keyframes logo-spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
+/* Footer (if any) */
+.footer {
+  margin-top: auto;
+  background: transparent;
+  border-top: 1px solid rgba(140, 107, 61, 0.15);
+  padding: 0.75rem;
+  color: #5A3E1B;
 }
 
-@media (prefers-reduced-motion: no-preference) {
-  a:nth-of-type(2) .logo {
-    animation: logo-spin infinite 20s linear;
-  }
+/* Links */
+a {
+  font-weight: 500;
+  color: inherit;
+  text-decoration: none;
 }
 
-.card {
-  padding: 2em;
-}
-
-.read-the-docs {
-  color: #888;
+a:hover {
+  text-decoration: underline;
 }
 
 /* make our nav-button look like a link */

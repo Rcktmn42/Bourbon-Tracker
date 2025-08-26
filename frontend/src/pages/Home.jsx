@@ -38,19 +38,19 @@ export default function Home() {
                   </button>
                   
                   <button 
-                    className="report-button coming-soon"
-                    disabled
+                    className="report-button primary"
+                    onClick={() => navigate('/inventory')}
                   >
                     🏪 Current Store Inventory
-                    <span className="report-description">Coming soon</span>
+                    <span className="report-description">Search current allocated product inventory</span>
                   </button>
                   
                   <button 
-                    className="report-button coming-soon"
-                    disabled
+                    className="report-button primary"
+                    onClick={() => navigate('/delivery-analysis')}
                   >
                     📈 Historical Trends
-                    <span className="report-description">Coming soon</span>
+                    <span className="report-description">Delivery analysis and drop predictions</span>
                   </button>
                 </div>
               </div>

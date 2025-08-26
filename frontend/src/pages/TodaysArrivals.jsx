@@ -8,6 +8,12 @@ export default function TodaysArrivals() {
   const [error, setError] = useState('');
   const [summary, setSummary] = useState(null);
 
+ // ADD THIS FUNCTION HERE:
+  const formatDate = (dateString) => {
+    const [year, month, day] = dateString.split('-');
+    return `${month}/${day}/${year}`;
+  };
+
   useEffect(() => {
     fetchTodaysArrivals();
   }, []);
@@ -84,7 +90,7 @@ export default function TodaysArrivals() {
           <h1>Today's Arrivals</h1>
           {summary && (
             <div className="arrivals-summary">
-              <p>{summary.total_arrivals} new deliveries detected for {new Date(summary.date).toLocaleDateString()}</p>
+               <p>{summary.total_arrivals} new deliveries detected for {formatDate(summary.date)}</p>
               <button onClick={fetchTodaysArrivals} className="refresh-button">
                 Refresh Data
               </button>

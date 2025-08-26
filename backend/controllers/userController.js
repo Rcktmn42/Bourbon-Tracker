@@ -1,5 +1,5 @@
 // backend/controllers/userController.js
-import db from '../config/db.js';
+import userDb from '../config/db.js'; // Updated import name
 import Joi from 'joi';
 
 const profileSchema = Joi.object({
@@ -38,9 +38,9 @@ function formatPhoneForDisplay(phone) {
 // GET /api/user/me
 export async function getProfile(req, res) {
   try {
-    const user = await db('users')
+    const user = await userDb('users')
       .select('first_name', 'last_name', 'email', 'phone_number')
-      .where({ user_id: req.user.sub }) // sub set by JWT (user_id)
+      .where('user_id', req.user.userId) // Changed from object syntax to direct syntax
       .first();
 
     if (!user) return res.sendStatus(404);
@@ -76,8 +76,8 @@ export async function updateProfile(req, res) {
       return res.status(400).json({ error: phoneError.message });
     }
 
-    const count = await db('users')
-      .where({ user_id: req.user.sub })
+    const count = await userDb('users')
+      .where('user_id', req.user.userId) // Changed from object syntax to direct syntax
       .update({ 
         first_name, 
         last_name, 

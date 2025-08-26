@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Verify Your Email - {{siteName}}</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f8f6f4;
+        }
+        .container {
+            background: white;
+            padding: 40px;
+            border-radius: 16px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+        .header {
+            text-align: center;
+            border-bottom: 2px solid #6a451f;
+            padding-bottom: 20px;
+            margin-bottom: 30px;
+        }
+        .header h1 {
+            color: #6a451f;
+            margin: 0;
+            font-size: 28px;
+        }
+        .verification-code {
+            background: linear-gradient(135deg, #6a451f, #8b5a2b);
+            color: white;
+            font-size: 32px;
+            font-weight: bold;
+            padding: 20px;
+            border-radius: 12px;
+            text-align: center;
+            margin: 30px 0;
+            letter-spacing: 8px;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+        }
+        .content {
+            margin-bottom: 30px;
+        }
+        .content h2 {
+            color: #4b3626;
+            margin-bottom: 15px;
+        }
+        .instructions {
+            background: #f9f9f9;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+        .instructions ol {
+            margin: 0;
+            padding-left: 20px;
+        }
+        .instructions li {
+            margin: 8px 0;
+        }
+        .warning-box {
+            background: #fff4e6;
+            border-left: 4px solid #ff9800;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 4px;
+        }
+        .footer {
+            border-top: 1px solid #eee;
+            padding-top: 20px;
+            margin-top: 30px;
+            font-size: 14px;
+            color: #666;
+            text-align: center;
+        }
+        .expiry-info {
+            background: #e8f5e8;
+            border: 1px solid #4caf50;
+            padding: 12px;
+            border-radius: 6px;
+            text-align: center;
+            margin: 20px 0;
+            font-size: 14px;
+            color: #2e7d32;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>{{siteName}}</h1>
+        </div>
+        
+        <div class="content">
+            <h2>Verify Your Email Address</h2>
+            
+            <p>Hi {{firstName}},</p>
+            
+            <p>Welcome to WakePour! To complete your registration, please verify your email address by entering this verification code:</p>
+            
+            <div class="verification-code">
+                {{verificationCode}}
+            </div>
+            
+            <div class="expiry-info">
+                ⏰ This code expires in 30 minutes
+            </div>
+            
+            <div class="instructions">
+                <h3>How to verify:</h3>
+                <ol>
+                    <li>Go back to the registration page in your browser</li>
+                    <li>Enter the 6-digit code shown above</li>
+                    <li>Click "Verify Email"</li>
+                </ol>
+            </div>
+            
+            <div class="warning-box">
+                <strong>Important:</strong> You have 3 attempts to enter the correct code. If you need a new code, you can request one on the verification page.
+            </div>
+            
+            <p>If you didn't register for WakePour, please ignore this email. The verification code will expire automatically.</p>
+        </div>
+        
+        <div class="footer">
+            <p>
+                <strong>{{siteName}}</strong><br>
+                Questions? Contact us at <a href="mailto:{{supportEmail}}">{{supportEmail}}</a>
+            </p>
+            <p style="margin-top: 15px; font-size: 12px; color: #999;">
+                This verification code was generated for {{email}}. Do not share this code with anyone.
+            </p>
+        </div>
+    </div>
+</body>
+</html>

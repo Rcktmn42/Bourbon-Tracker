@@ -1,10 +1,11 @@
 /* Home.css */
 
-/* Full‐viewport background for Home */
+
+/* Full viewport background for Home */
 .home-page {
   min-height: calc(100vh - 4rem); /* subtract header height */
-  width: 100vw;
-  background: url('/images/home-bg.jpg') center/cover no-repeat;
+  /* width: 100vw; */
+  background-image: url('/images/home-bg.jpg');
   display: flex;
   align-items: center;
   justify-content: center;
@@ -13,15 +14,262 @@
   position: relative;
   z-index: 1;
   /* Break out of container to use full width */
-  margin-left: calc(-50vw + 50%);
+  /* margin-left: calc(-50vw + 50%); */
+  padding: 1rem; /* Add padding for mobile */
 }
 
 /* White card in the center */
 .home-container {
   background: rgba(255, 255, 255, 0.9);
   padding: 2rem;
-  border-radius: 0.5rem;
+  border-radius: 16px;
   text-align: center;
   max-width: 600px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  width: 100%;
+}
+
+/* Welcome Section */
+.welcome-section {
+  margin-bottom: 2rem;
+}
+
+.welcome-message {
+  color: #5A3E1B;
+  font-size: 1.1rem;
+  margin-top: 1rem;
+}
+
+/* Reports Section */
+.reports-section {
+  margin-bottom: 2rem;
+}
+
+.reports-section h2 {
+  color: #3D2B1F;
+  margin-bottom: 1.5rem;
+}
+
+.reports-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 2rem;
+  margin-bottom: 2rem;
+}
+
+.report-category {
+  text-align: left;
+}
+
+.report-category h3 {
+  color: #5A3E1B;
+  margin-bottom: 1rem;
+  font-size: 1.2rem;
+}
+
+.report-links {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+/* Report Buttons */
+.report-button {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 1rem;
+  border: 2px solid #264653;
+  border-radius: 0.5rem;
+  background: white;
+  color: #264653;
+  text-align: left;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 1rem;
+  font-weight: 600;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.report-button.primary {
+  background: #264653;
+  color: white;
+}
+
+.report-button.primary:hover {
+  background: #1B3642;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+.report-button.coming-soon {
+  background: #f5f5f5;
+  color: #888;
+  border-color: #ccc;
+  cursor: not-allowed;
+}
+
+.report-button:not(.coming-soon):not(:disabled):hover {
+  background: #E8F4F8;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.report-description {
+  font-size: 0.85rem;
+  font-weight: 400;
+  margin-top: 0.25rem;
+  color: inherit;
+  opacity: 0.8;
+}
+
+/* User Section */
+.user-section {
+  margin-bottom: 2rem;
+}
+
+.user-section h2 {
+  color: #3D2B1F;
+  margin-bottom: 1rem;
+}
+
+.account-links {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.account-button {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 1rem;
+  border: 2px solid #6A4C93;
+  border-radius: 0.5rem;
+  background: #6A4C93;
+  color: white;
+  text-align: left;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 1rem;
+  font-weight: 600;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.account-button:hover {
+  background: #5A3E7C;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+.account-button.coming-soon {
+  background: #f5f5f5;
+  color: #888;
+  border-color: #ccc;
+  cursor: not-allowed;
+}
+
+/* Auth Section (for non-logged in users) */
+.auth-section {
+  text-align: center;
+}
+
+.auth-section h2 {
+  color: #3D2B1F;
+  margin-bottom: 1rem;
+}
+
+.auth-section p {
+  color: #5A3E1B;
+  margin-bottom: 1.5rem;
+}
+
+.auth-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.auth-button {
+  padding: 0.75rem 1.5rem;
+  border: 2px solid #264653;
+  border-radius: 0.5rem;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.auth-button.primary {
+  background: #264653;
+  color: white;
+}
+
+.auth-button.primary:hover {
+  background: #1B3642;
+}
+
+.auth-button.secondary {
+  background: white;
+  color: #264653;
+}
+
+.auth-button.secondary:hover {
+  background: #E8F4F8;
+}
+
+/* Mobile Responsive */
+@media (max-width: 768px) {
+  .home-page {
+    padding: 0.5rem;
+    min-height: calc(100vh - 4rem);
+  }
+  
+  .home-container {
+    padding: 1.5rem;
+    max-width: 100%;
+  }
+  
+  .welcome-section h1 {
+    font-size: 2rem;
+  }
+  
+  .reports-grid {
+    gap: 1.5rem;
+  }
+  
+  .report-button,
+  .account-button,
+  .auth-button {
+    padding: 0.875rem;
+    font-size: 0.9rem;
+  }
+  
+  .report-description {
+    font-size: 0.8rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .home-container {
+    padding: 1rem;
+  }
+  
+  .welcome-section h1 {
+    font-size: 1.75rem;
+  }
+  
+  .report-category h3 {
+    font-size: 1.1rem;
+  }
+  
+  .reports-section h2,
+  .user-section h2,
+  .auth-section h2 {
+    font-size: 1.3rem;
+  }
 }

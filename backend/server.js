@@ -14,6 +14,7 @@ import adminRoutes from './routes/adminRoutes.js';
 import userRoutes from './routes/userRoutes.js';
 import inventoryRoutes from './routes/inventoryRoutes.js';  // NEW
 
+
 // Middleware
 import { authenticate } from './middleware/authMiddleware.js';
 
@@ -23,6 +24,12 @@ dotenv.config();
 const app = express();
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
+
+// server.js (top-level, before app.use('/api/', apiLimiter))
+if (process.env.NODE_ENV === 'production') {
+  // Nginx is on the same box; trust loopback or the first hop
+  app.set('trust proxy', 'loopback');   // or: app.set('trust proxy', 1);
+}
 
 // Middleware
 app.use(helmet());

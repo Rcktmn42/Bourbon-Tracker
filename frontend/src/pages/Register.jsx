@@ -20,8 +20,6 @@ export default function Register() {
   });
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
-  const [success, setSuccess] = useState('');
-  const [successDetails, setSuccessDetails] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
 
@@ -37,8 +35,6 @@ export default function Register() {
       [name]: value,
     }));
     setError('');
-    setSuccess('');
-    setSuccessDetails('');
   };
 
   const canSubmit =
@@ -51,8 +47,6 @@ export default function Register() {
   const handleSubmit = async e => {
     e.preventDefault();
     setError('');
-    setSuccess('');
-    setSuccessDetails('');
     setIsLoading(true);
 
     try {
@@ -69,85 +63,34 @@ export default function Register() {
       const data = await res.json();
       
       if (!res.ok) {
+        if (data.code === 'UNVERIFIED_EXISTS') {
+          // User exists but hasn't verified - redirect to verification
+          navigate('/verify-email', { 
+            state: { 
+              email: form.email.trim().toLowerCase(),
+              message: data.error 
+            } 
+          });
+          return;
+        }
         throw new Error(data.error || 'Registration failed');
       }
 
-      // Handle improved backend response
-      setSuccess(data.message || 'Registration successful!');
-      if (data.nextSteps) {
-        setSuccessDetails(data.nextSteps);
-      }
-
-      // Clear the form
-      setForm({
-        first_name: '',
-        last_name: '',
-        email: '',
-        password: '',
-        confirmPassword: '',
+      // Registration successful - redirect to email verification
+      console.log('Registration successful, redirecting to verification');
+      navigate('/verify-email', { 
+        state: { 
+          email: form.email.trim().toLowerCase(),
+          message: data.message
+        } 
       });
 
-      // Don't auto-redirect - let user read the message and go to login when ready
     } catch (err) {
       setError(err.message);
     } finally {
       setIsLoading(false);
     }
   };
-
-  // Show success page instead of form after successful registration
-  if (success) {
-    return (
-      <div className="register-page">
-        <div className="register-success-page">
-          <div className="success-icon">🎉</div>
-          <h2>Registration Successful!</h2>
-          
-          <div className="success-content">
-            <div className="success-message">{success}</div>
-            {successDetails && (
-              <div className="success-details">{successDetails}</div>
-            )}
-            
-            <div className="success-info">
-              <h3>What happens next?</h3>
-              <ol>
-                <li>Check your email for a welcome message</li>
-                <li>Our team will review your registration</li>
-                <li>You'll receive an approval email (usually within 24-48 hours)</li>
-                <li>Once approved, you can log in and start using WakePour</li>
-              </ol>
-            </div>
-          </div>
-
-          <div className="success-actions">
-            <button 
-              className="register-button primary"
-              onClick={() => navigate('/login')}
-            >
-              Continue to Login
-            </button>
-            <button 
-              className="register-button secondary"
-              onClick={() => {
-                setSuccess('');
-                setSuccessDetails('');
-                setForm({
-                  first_name: '',
-                  last_name: '',
-                  email: '',
-                  password: '',
-                  confirmPassword: '',
-                });
-              }}
-            >
-              Register Another Account
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="register-page">
@@ -218,7 +161,7 @@ export default function Register() {
           <ul className="password-checklist">
             {passwordChecks.map((check, i) => (
               <li key={check.label} className={passwordResults[i] ? 'met' : 'unmet'}>
-                {passwordResults[i] ? '✔' : '✗'} {check.label}
+                {passwordResults[i] ? '✓' : '✗'} {check.label}
               </li>
             ))}
           </ul>
@@ -240,12 +183,12 @@ export default function Register() {
           </div>
           {form.confirmPassword && (
             <div className={passwordsMatch ? "password-match met" : "password-match unmet"}>
-              {passwordsMatch ? "✔ Passwords match" : "✗ Passwords do not match"}
+              {passwordsMatch ? "✓ Passwords match" : "✗ Passwords do not match"}
             </div>
           )}
         </div>
 
-        {/* Error messages only */}
+        {/* Error messages */}
         {error && <div className="register-error">{error}</div>}
 
         <button
@@ -259,6 +202,10 @@ export default function Register() {
         {allPasswordOk && passwordsMatch && (
           <div className="password-strong-hint">Great, your password is strong!</div>
         )}
+
+        <div className="login-footer">
+          <p>Already have an account? <a href="/login">Sign in here</a></p>
+        </div>
       </form>
     </div>
   );
