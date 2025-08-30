@@ -4,7 +4,8 @@ import express from 'express';
 import {
   listUsers,
   updateUserRole,
-  updateUserStatus
+  updateUserStatus,
+  initiatePasswordReset
 } from '../controllers/adminController.js';
 import { authenticate } from '../middleware/authMiddleware.js';
 
@@ -21,5 +22,6 @@ router.use((req, res, next) => {
 router.get('/users', listUsers);
 router.patch('/users/:userId/role', updateUserRole);
 router.patch('/users/:userId/status', updateUserStatus);
+router.post('/users/:userId/reset-password', initiatePasswordReset);
 
 export default router;

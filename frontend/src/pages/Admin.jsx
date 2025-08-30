@@ -6,6 +6,7 @@ import './admin.css';
 export default function Admin() {
   const [users, setUsers] = useState([]);
   const [error, setError] = useState(null);
+  const [resetLoading, setResetLoading] = useState({});
 
   useEffect(() => {
     fetch('/api/admin/users', { credentials: 'include' })
@@ -49,6 +50,35 @@ export default function Admin() {
       .catch(err => setError(err.toString()));
   };
 
+  const initiatePasswordReset = async (userId, userFirstName, userEmail) => {
+    if (!window.confirm(`Are you sure you want to send a password reset email to ${userFirstName} (${userEmail})?`)) {
+      return;
+    }
+
+    setResetLoading(prev => ({ ...prev, [userId]: true }));
+    
+    try {
+      const response = await fetch(`/api/admin/users/${userId}/reset-password`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' }
+      });
+
+      const data = await response.json();
+
+      if (response.ok && data.success) {
+        alert(`✅ ${data.message}`);
+      } else {
+        throw new Error(data.error || 'Failed to send password reset email');
+      }
+    } catch (err) {
+      console.error('Password reset error:', err);
+      alert(`❌ Error: ${err.message}`);
+    } finally {
+      setResetLoading(prev => ({ ...prev, [userId]: false }));
+    }
+  };
+
   if (error) {
     return <p style={{ color: 'red' }}>Error: {error}</p>;
   }
@@ -68,6 +98,7 @@ export default function Admin() {
               <th>Email</th>
               <th>Status</th>
               <th>Role</th>
+              <th>Actions</th>
             </tr>
           </thead>
           <tbody>
@@ -98,6 +129,16 @@ export default function Admin() {
                     <option value="power_user">power_user</option>
                     <option value="admin">admin</option>
                   </select>
+                </td>
+                <td>
+                  <button 
+                    className="reset-password-btn"
+                    onClick={() => initiatePasswordReset(u.user_id, u.first_name, u.email)}
+                    disabled={resetLoading[u.user_id] || u.status !== 'active'}
+                    title={u.status !== 'active' ? 'User must be active to reset password' : 'Send password reset email to user'}
+                  >
+                    {resetLoading[u.user_id] ? 'Sending...' : '🔐 Reset Password'}
+                  </button>
                 </td>
               </tr>
             ))}

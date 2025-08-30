@@ -147,7 +147,7 @@ export async function getTodaysArrivals(req, res) {
 // Get inventory summary stats for dashboard
 export async function getInventorySummary(req, res) {
   try {
-    const today = new Date().toISOString().split('T')[0];
+    const today = new Date().toLocaleDateString('en-CA', { timeZone: 'America/New_York' });
     
     // Get basic stats
     const statsQuery = `
@@ -362,26 +362,27 @@ export async function generateDeliveryAnalysis(req, res) {
     
     // Get deliveries - focus on 'first' and 'up' change types within date range
     const deliveryQuery = `
-      SELECT 
-        ih.history_id,
-        ih.store_id,
-        s.store_number,
-        s.nickname,
-        s.address,
-        s.region,
-        s.mixed_beverage,
-        ih.quantity,
-        ih.change_type,
-        ih.delta,
-        ih.check_time,
-        DATE(ih.check_time) as delivery_date
-      FROM inventory_history ih
-      JOIN stores s ON ih.store_id = s.store_id
-      WHERE ih.plu = ?
-        AND ih.change_type IN ('first', 'up')
-        AND DATE(ih.check_time) BETWEEN ? AND ?
-        AND ih.quantity > 0
-      ORDER BY ih.check_time, s.nickname
+    SELECT 
+      ih.history_id,
+      ih.store_id,
+      s.store_number,
+      s.nickname,
+      s.address,
+      s.region,
+      s.mixed_beverage,
+      ih.quantity,
+      ih.change_type,
+      ih.delta,
+      ih.check_time,
+      DATE(ih.check_time) as delivery_date,
+      strftime('%w', DATE(ih.check_time)) as day_of_week  -- 0=Sunday, 1=Monday, etc.
+    FROM inventory_history ih
+    JOIN stores s ON ih.store_id = s.store_id
+    WHERE ih.plu = ?
+      AND ih.change_type IN ('first', 'up')
+      AND DATE(ih.check_time) BETWEEN ? AND ?
+      AND ih.quantity > 0
+    ORDER BY ih.check_time, s.nickname
     `;
     const deliveries = await inventoryDb.raw(deliveryQuery, [plu, startDate, endDate]);
     
@@ -688,50 +689,53 @@ export async function getProductHistory(req, res) {
 
 // Helper functions for date calculations
 function getWeekRange(weeksBack = 0) {
-  const today = new Date();
-  
-  if (weeksBack === 0) {
-    // Current analysis: last complete week + this week if in progress
-    const dayOfWeek = today.getDay(); // 0=Sunday, 1=Monday, ..., 6=Saturday
-    const daysToLastFriday = dayOfWeek === 0 ? 2 : (dayOfWeek + 2) % 7;
-    
-    const lastFriday = new Date(today);
-    lastFriday.setDate(today.getDate() - daysToLastFriday);
-    
-    const lastMonday = new Date(lastFriday);
-    lastMonday.setDate(lastFriday.getDate() - 4);
-    
-    // If we're in a weekday, extend to today
-    let endDate;
-    if (dayOfWeek >= 1 && dayOfWeek <= 5) { // Monday-Friday
-      endDate = today.toISOString().split('T')[0];
-    } else {
-      endDate = lastFriday.toISOString().split('T')[0];
-    }
-    
+  // Always compute calendar dates in America/New_York
+  const TZ = 'America/New_York';
+  const fmt = new Intl.DateTimeFormat('en-US', {
+    timeZone: TZ,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    weekday: 'short', // Sun, Mon, ...
+  });
+
+  const partsOf = (d) => {
+    const parts = fmt.formatToParts(d).reduce((acc, p) => {
+      acc[p.type] = p.value;
+      return acc;
+    }, {});
+    // Map Sun..Sat -> 0..6
+    const dowMap = { Sun: 0, Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5, Sat: 6 };
     return {
-      startDate: lastMonday.toISOString().split('T')[0],
-      endDate
+      year: Number(parts.year),
+      month: Number(parts.month),
+      day: Number(parts.day),
+      dow: dowMap[parts.weekday],
     };
-  } else {
-    // Historical weeks
-    const dayOfWeek = today.getDay();
-    const daysToLastFriday = dayOfWeek === 0 ? 2 : (dayOfWeek + 2) % 7;
-    
-    const recentFriday = new Date(today);
-    recentFriday.setDate(today.getDate() - daysToLastFriday);
-    
-    const targetFriday = new Date(recentFriday);
-    targetFriday.setDate(recentFriday.getDate() - (weeksBack * 7));
-    
-    const targetMonday = new Date(targetFriday);
-    targetMonday.setDate(targetFriday.getDate() - 4);
-    
-    return {
-      startDate: targetMonday.toISOString().split('T')[0],
-      endDate: targetFriday.toISOString().split('T')[0]
-    };
-  }
+  };
+
+  const pad2 = (n) => String(n).padStart(2, '0');
+  const ymd = ({ year, month, day }) => `${year}-${pad2(month)}-${pad2(day)}`;
+
+  const now = new Date();
+  const nowET = partsOf(now);
+
+  // Monday index = 1. "Days since Monday" in ET (0..6)
+  const daysSinceMonday = (nowET.dow + 6) % 7;
+
+  // Total days to walk back to the Monday N weeks ago
+  const totalDaysBack = daysSinceMonday + (Number(weeksBack) || 0) * 7;
+
+  // Step back in whole days; DST won’t break day-of-week correctness here
+  const startMoment = new Date(now.getTime() - totalDaysBack * 24 * 60 * 60 * 1000);
+
+  const startET = partsOf(startMoment);
+
+  // Per requirement: end date is ALWAYS "today" (ET)
+  return {
+    startDate: ymd(startET),
+    endDate: ymd(nowET),
+  };
 }
 
 function getCurrentMonthRange() {

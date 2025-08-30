@@ -82,3 +82,66 @@ export async function updateUserStatus(req, res) {
     res.status(500).json({ error: 'Failed to update user status' });
   }
 }
+
+// Initiate password reset for a user (admin only)
+export async function initiatePasswordReset(req, res) {
+  const { userId } = req.params;
+  
+  try {
+    // Get user information
+    const user = await db('users')
+      .select('user_id', 'first_name', 'email', 'status', 'email_verified')
+      .where({ user_id: userId })
+      .first();
+
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    // Only allow password reset for active, verified users
+    if (user.status !== 'active' || !user.email_verified) {
+      return res.status(400).json({ 
+        error: 'Can only reset password for active, verified users',
+        code: 'USER_NOT_ELIGIBLE'
+      });
+    }
+
+    // Generate secure token
+    const crypto = await import('crypto');
+    const resetToken = crypto.randomBytes(32).toString('hex');
+    const resetExpires = new Date(Date.now() + 60 * 60 * 1000); // 1 hour from now
+
+    // Save reset token to database
+    await db('users')
+      .where('user_id', user.user_id)
+      .update({
+        password_reset_token: resetToken,
+        password_reset_expires: resetExpires,
+        password_reset_attempts: 0, // Reset attempts when admin initiates
+        password_reset_last_attempt: new Date()
+      });
+
+    // Send password reset email
+    const emailResult = await emailService.sendPasswordResetEmail(
+      user.email,
+      user.first_name,
+      resetToken
+    );
+
+    if (emailResult.success) {
+      console.log(`✅ Admin-initiated password reset email sent to: ${user.email} (initiated by admin: ${req.user.email})`);
+      
+      res.json({ 
+        message: `Password reset email sent to ${user.first_name} (${user.email})`,
+        success: true
+      });
+    } else {
+      console.error(`❌ Failed to send admin-initiated password reset email to: ${user.email}`, emailResult.error);
+      res.status(500).json({ error: 'Failed to send password reset email' });
+    }
+
+  } catch (error) {
+    console.error('Admin password reset error:', error);
+    res.status(500).json({ error: 'Failed to initiate password reset' });
+  }
+}

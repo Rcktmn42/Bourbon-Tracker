@@ -1,34 +1,66 @@
 /* frontend/src/pages/DeliveryAnalysis.css */
 
+/* Full viewport background - matches other pages exactly */
 .delivery-analysis {
+    min-height: calc(100vh - 4rem); /* subtract header height */
+    width: 100vw;
+    background-image: url('/images/home-bg.jpg');
+    background-size: cover;
+    background-position: center;
+    background-attachment: fixed;
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    box-sizing: border-box;
+    position: relative;
+    z-index: 1;
+    margin: 0;
+    padding: 1rem;
+}
+
+/* White card container - matches other pages structure */
+.analysis-container {
+    background: rgba(255, 255, 255, 0.95);
+    padding: 2rem;
+    border-radius: 16px;
     max-width: 1200px;
-    margin: 0 auto;
-    padding: 20px;
+    width: 100%;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    backdrop-filter: blur(2px);
 }
 
 .analysis-header {
     text-align: center;
-    margin-bottom: 30px;
+    margin-bottom: 2rem;
+    padding-bottom: 1rem;
+    border-bottom: 2px solid #6a451f;
 }
 
 .analysis-header h1 {
-    color: #5A3E1B;
-    margin-bottom: 10px;
+    color: #3D2B1F; /* Match other pages */
+    margin-bottom: 0.5rem;
+    font-size: 2rem;
+}
+
+.analysis-header p {
+    color: #5A3E1B; /* Match other pages secondary color */
+    margin: 0;
 }
 
 .search-section, .options-section {
-    background: white;
-    padding: 20px;
-    border-radius: 8px;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-    margin-bottom: 20px;
+    background: rgba(255, 255, 255, 0.8);
+    padding: 1.5rem;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    margin-bottom: 1.5rem;
     border-left: 4px solid #6a451f;
 }
 
 .search-section h2, .options-section h2 {
-    color: #5A3E1B;
+    color: #3D2B1F; /* Match header color */
     margin-top: 0;
-    margin-bottom: 15px;
+    margin-bottom: 1rem;
+    font-size: 1.5rem;
 }
 
 .search-container {
@@ -117,9 +149,13 @@
     margin-top: 5px;
 }
 
-.generate-button {
-    background: #6a451f;
-    color: white;
+.action-buttons {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+}
+
+.generate-button, .refresh-button {
     border: none;
     padding: 12px 24px;
     border-radius: 6px;
@@ -127,6 +163,11 @@
     font-size: 16px;
     font-weight: 600;
     transition: background-color 0.2s;
+}
+
+.generate-button {
+    background: #6a451f;
+    color: white;
 }
 
 .generate-button:hover:not(:disabled) {
@@ -138,21 +179,55 @@
     cursor: not-allowed;
 }
 
+.refresh-button {
+    background: #28a745;
+    color: white;
+    padding: 12px 20px;
+}
+
+.refresh-button:hover:not(:disabled) {
+    background: #218838;
+}
+
+.refresh-button:disabled {
+    background: #6c757d;
+    cursor: not-allowed;
+}
+
+.cache-status {
+    margin-top: 10px;
+    padding: 8px 12px;
+    background: #f8f9fa;
+    border-radius: 4px;
+    border-left: 3px solid #28a745;
+}
+
+.cache-status small {
+    color: #6c757d;
+}
+
 .analysis-results {
-    background: white;
-    padding: 20px;
-    border-radius: 8px;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    background: rgba(255, 255, 255, 0.8);
+    padding: 1.5rem;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    margin-top: 1.5rem;
 }
 
 .results-header {
     text-align: center;
-    margin-bottom: 20px;
+    margin-bottom: 1.5rem;
 }
 
 .results-header h2 {
-    color: #5A3E1B;
-    margin-bottom: 5px;
+    color: #3D2B1F; /* Match consistent theme */
+    margin-bottom: 0.5rem;
+    font-size: 1.75rem;
+}
+
+.results-header p {
+    color: #5A3E1B; /* Match secondary color */
+    margin: 0;
 }
 
 .summary-grid {
@@ -350,45 +425,58 @@
 }
 
 .error-message {
-    background: #f8d7da;
-    border-left: 4px solid #8B4513;
-    padding: 15px;
-    border-radius: 4px;
-    margin: 20px 0;
+    background: rgba(248, 215, 218, 0.9);
+    border-left: 4px solid #dc3545;
+    padding: 1rem;
+    border-radius: 8px;
+    margin: 1.5rem 0;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
 }
 
 .error-message h3 {
-    color: #5A3E1B;
+    color: #721c24;
     margin-top: 0;
+    margin-bottom: 0.5rem;
 }
 
 .error-message p {
-    color: #5A3E1B;
+    color: #721c24;
     margin-bottom: 0;
 }
 
 .disclaimer {
-    background: #f8f6f4;
-    border-left: 4px solid #6b5a4a;
-    padding: 20px;
-    margin-top: 30px;
-    border-radius: 4px;
+    background: rgba(248, 249, 250, 0.9);
+    border-left: 4px solid #6a451f;
+    padding: 1.5rem;
+    margin-top: 2rem;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
 }
 
 .disclaimer h3 {
-    color: #5A3E1B;
+    color: #3D2B1F; /* Match consistent theme */
     margin-top: 0;
+    margin-bottom: 1rem;
 }
 
 .disclaimer p {
-    color: #6b5a4a;
+    color: #5A3E1B; /* Match secondary color */
     line-height: 1.5;
-    margin-bottom: 10px;
+    margin-bottom: 0.75rem;
 }
 
 @media (max-width: 768px) {
     .delivery-analysis {
-        padding: 10px;
+        padding: 0.5rem;
+        align-items: flex-start;
+    }
+    
+    .analysis-container {
+        padding: 1rem;
+    }
+    
+    .analysis-header h1 {
+        font-size: 1.5rem;
     }
     
     .options-grid {
@@ -400,10 +488,20 @@
     }
     
     .search-section, .options-section, .analysis-results {
-        padding: 15px;
+        padding: 1rem;
     }
     
     .store-item {
-        padding: 8px;
+        padding: 0.75rem;
+    }
+    
+    .action-buttons {
+        flex-direction: column;
+        gap: 0.75rem;
+        align-items: stretch;
+    }
+    
+    .generate-button, .refresh-button {
+        width: 100%;
     }
 }

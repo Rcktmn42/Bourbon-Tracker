@@ -1,6 +1,6 @@
 // frontend/src/pages/Login.jsx
 import React, { useState, useEffect } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext.jsx';
 import './Login.css';
 
@@ -113,6 +113,7 @@ export default function Login() {
                   <li>Double-check your email and password</li>
                   <li>Make sure Caps Lock is off</li>
                   <li>Try typing your password in a text editor first</li>
+                  <li><Link to="/request-password-reset">Forgot your password?</Link></li>
                 </ul>
               </div>
             )}
@@ -155,6 +156,7 @@ export default function Login() {
         {/* Additional helpful links */}
         <div className="login-footer">
           <p>Don't have an account? <a href="/register" onClick={(e) => { e.preventDefault(); navigate('/register'); }}>Create one here</a></p>
+          <p><Link to="/request-password-reset">Forgot your password?</Link></p>
         </div>
       </form>
     </div>

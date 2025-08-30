@@ -2,26 +2,15 @@
   "tables": {
     "sqlite_sequence": "CREATE TABLE sqlite_sequence(name,seq)",
     "stores": "CREATE TABLE stores (store_id INTEGER PRIMARY KEY AUTOINCREMENT, store_number TEXT UNIQUE ON CONFLICT ABORT, address TEXT UNIQUE, region TEXT, nickname TEXT, delivery_interval_days INTEGER, last_delivery_date DATE, mixed_beverage INTEGER NOT NULL DEFAULT 0)",
-    "warehouse_inventory_history_v2": "CREATE TABLE warehouse_inventory_history_v2 (\n    history_id INTEGER PRIMARY KEY AUTOINCREMENT,\n    nc_code TEXT NOT NULL,\n    check_date DATE NOT NULL,\n    total_available INTEGER,\n    listing_type TEXT,\n    supplier_allotment INTEGER,\n    FOREIGN KEY (nc_code) REFERENCES \"alcohol_old\"(nc_code),\n    UNIQUE (nc_code, check_date)\n)",
     "boards": "CREATE TABLE boards (\n  board_id   INTEGER PRIMARY KEY AUTOINCREMENT,\n  board_name TEXT    UNIQUE NOT NULL\n)",
     "shipments_history": "CREATE TABLE shipments_history (\n  shipment_id   INTEGER PRIMARY KEY AUTOINCREMENT,\n  nc_code       TEXT    NOT NULL,\n  board_id      INTEGER NOT NULL,\n  ship_date     DATE    NOT NULL,\n  num_units     INTEGER NOT NULL,\n  FOREIGN KEY(board_id) REFERENCES boards(board_id),\n  UNIQUE(nc_code, board_id, ship_date)\n)",
     "alcohol": "CREATE TABLE alcohol (\n      alcohol_id        INTEGER PRIMARY KEY AUTOINCREMENT,\n      nc_code           INTEGER UNIQUE NOT NULL,\n      brand_name        TEXT,\n      size_ml           INTEGER,\n      cases_per_pallet  INTEGER,\n      supplier          TEXT,\n      broker_name       TEXT,\n      first_seen_date   DATE,\n      image_path        TEXT,\n      Listing_Type      TEXT,\n      style_tags        TEXT,\n      alcohol_type      TEXT,\n      alcohol_subtype   TEXT,\n      retail_price      REAL,\n      bottles_per_case  INTEGER\n    )",
     "bourbons": "CREATE TABLE bourbons (\n      bourbon_id       INTEGER PRIMARY KEY AUTOINCREMENT,\n      name             TEXT    NOT NULL,\n      plu              INTEGER UNIQUE NOT NULL,\n      last_seeded_date TEXT\n    )",
     "current_inventory": "CREATE TABLE current_inventory (\n      inventory_id INTEGER PRIMARY KEY AUTOINCREMENT,\n      store_id     INTEGER NOT NULL,\n      bourbon_id   INTEGER,\n      plu          INTEGER NOT NULL,\n      quantity     INTEGER,\n      last_updated TEXT,\n      UNIQUE(store_id,plu),\n      FOREIGN KEY(store_id)   REFERENCES stores(store_id),\n      FOREIGN KEY(bourbon_id) REFERENCES bourbons(bourbon_id)\n    )",
-    "inventory_history": "CREATE TABLE inventory_history (\n      history_id INTEGER PRIMARY KEY AUTOINCREMENT,\n      store_id   INTEGER NOT NULL,\n      bourbon_id INTEGER,\n      plu        INTEGER NOT NULL,\n      quantity   INTEGER,\n      check_time TEXT,\n      FOREIGN KEY(store_id)   REFERENCES stores(store_id),\n      FOREIGN KEY(bourbon_id) REFERENCES bourbons(bourbon_id)\n    )"
+    "inventory_history": "CREATE TABLE inventory_history (\n      history_id INTEGER PRIMARY KEY AUTOINCREMENT,\n      store_id   INTEGER NOT NULL,\n      bourbon_id INTEGER,\n      plu        INTEGER NOT NULL,\n      quantity   INTEGER,\n      check_time TEXT, change_type TEXT CHECK (change_type IN ('up','down','zero','first','seed')), delta INTEGER,\n      FOREIGN KEY(store_id)   REFERENCES stores(store_id),\n      FOREIGN KEY(bourbon_id) REFERENCES bourbons(bourbon_id)\n    )",
+    "warehouse_inventory_history_v2": "CREATE TABLE \"warehouse_inventory_history_v2\" (\n    history_id        INTEGER PRIMARY KEY AUTOINCREMENT,\n    nc_code           INTEGER NOT NULL,\n    check_date        DATE    NOT NULL,\n    total_available   INTEGER,\n    listing_type      TEXT,\n    supplier_allotment INTEGER,\n    FOREIGN KEY (nc_code) REFERENCES alcohol(nc_code),\n    UNIQUE (nc_code, check_date)\n)"
   },
   "foreign_keys": [
-    {
-      "table": "warehouse_inventory_history_v2",
-      "id": 0,
-      "seq": 0,
-      "ref_table": "alcohol_old",
-      "from_column": "nc_code",
-      "to_column": "nc_code",
-      "on_update": "NO ACTION",
-      "on_delete": "NO ACTION",
-      "match": "NONE"
-    },
     {
       "table": "shipments_history",
       "id": 0,
@@ -73,6 +62,17 @@
       "ref_table": "stores",
       "from_column": "store_id",
       "to_column": "store_id",
+      "on_update": "NO ACTION",
+      "on_delete": "NO ACTION",
+      "match": "NONE"
+    },
+    {
+      "table": "warehouse_inventory_history_v2",
+      "id": 0,
+      "seq": 0,
+      "ref_table": "alcohol",
+      "from_column": "nc_code",
+      "to_column": "nc_code",
       "on_update": "NO ACTION",
       "on_delete": "NO ACTION",
       "match": "NONE"
@@ -140,58 +140,6 @@
           null,
           null,
           1
-        ]
-      ]
-    },
-    "warehouse_inventory_history_v2": {
-      "columns": [
-        "history_id",
-        "nc_code",
-        "check_date",
-        "total_available",
-        "listing_type",
-        "supplier_allotment"
-      ],
-      "rows": [
-        [
-          1,
-          "46822",
-          "2021-08-01",
-          0,
-          null,
-          224
-        ],
-        [
-          2,
-          "46549",
-          "2021-08-01",
-          0,
-          null,
-          660
-        ],
-        [
-          3,
-          "49369",
-          "2021-08-01",
-          39,
-          null,
-          420
-        ],
-        [
-          4,
-          "44041",
-          "2021-08-01",
-          318,
-          null,
-          450
-        ],
-        [
-          5,
-          "19730",
-          "2021-08-01",
-          0,
-          null,
-          0
         ]
       ]
     },
@@ -462,8 +410,8 @@
           10,
           36,
           20611,
-          23,
-          "2025-08-15T09:45:38"
+          0,
+          "2025-08-24T18:52:55"
         ]
       ]
     },
@@ -474,7 +422,9 @@
         "bourbon_id",
         "plu",
         "quantity",
-        "check_time"
+        "check_time",
+        "change_type",
+        "delta"
       ],
       "rows": [
         [
@@ -483,7 +433,9 @@
           38,
           18366,
           102,
-          "2025-02-03 21:37:17.199009"
+          "2025-02-03 21:37:17.199009",
+          "first",
+          null
         ],
         [
           3,
@@ -491,7 +443,9 @@
           7,
           20595,
           18,
-          "2025-02-06 18:01:19.225849"
+          "2025-02-06 18:01:19.225849",
+          "first",
+          null
         ],
         [
           4,
@@ -499,7 +453,9 @@
           7,
           20595,
           18,
-          "2025-02-06 18:01:19.234848"
+          "2025-02-06 18:01:19.234848",
+          "first",
+          null
         ],
         [
           5,
@@ -507,7 +463,9 @@
           7,
           20595,
           16,
-          "2025-02-06 18:01:19.248848"
+          "2025-02-06 18:01:19.248848",
+          "first",
+          null
         ],
         [
           6,
@@ -515,7 +473,61 @@
           7,
           20595,
           17,
-          "2025-02-06 18:01:19.256849"
+          "2025-02-06 18:01:19.256849",
+          "first",
+          null
+        ]
+      ]
+    },
+    "warehouse_inventory_history_v2": {
+      "columns": [
+        "history_id",
+        "nc_code",
+        "check_date",
+        "total_available",
+        "listing_type",
+        "supplier_allotment"
+      ],
+      "rows": [
+        [
+          1,
+          46822,
+          "2021-08-01",
+          0,
+          null,
+          224
+        ],
+        [
+          2,
+          46549,
+          "2021-08-01",
+          0,
+          null,
+          660
+        ],
+        [
+          3,
+          49369,
+          "2021-08-01",
+          39,
+          null,
+          420
+        ],
+        [
+          4,
+          44041,
+          "2021-08-01",
+          318,
+          null,
+          450
+        ],
+        [
+          5,
+          19730,
+          "2021-08-01",
+          0,
+          null,
+          0
         ]
       ]
     }

@@ -20,6 +20,10 @@ import DeliveryAnalysis from './pages/DeliveryAnalysis';
 import EmailVerification from './pages/EmailVerification';
 import VerificationSuccess from './pages/VerificationSuccess';
 
+// PASSWORD RESET IMPORTS - Add these new imports
+import RequestPasswordReset from './pages/RequestPasswordReset';
+import ResetPassword from './pages/ResetPassword';
+
 // Your existing CSS imports
 import './App.css';
 
@@ -114,6 +118,19 @@ function App() {
               <Route path="/verification-success" element={
                 <PublicLayout>
                   <VerificationSuccess />
+                </PublicLayout>
+              } />
+              
+              {/* PASSWORD RESET ROUTES - Add these new routes */}
+              <Route path="/request-password-reset" element={
+                <PublicLayout>
+                  <RequestPasswordReset />
+                </PublicLayout>
+              } />
+              
+              <Route path="/reset-password" element={
+                <PublicLayout>
+                  <ResetPassword />
                 </PublicLayout>
               } />
               

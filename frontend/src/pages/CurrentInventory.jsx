@@ -269,7 +269,7 @@ const StoreItem = ({ store }) => {
             <div className="store-info">
                 <div className="store-name">
                     {store.nickname} (#{store.store_number})
-                    {store.mixed_beverage && <span className="mixed-badge">MB</span>}
+                    {store.mixed_beverage ? <span className="mixed-badge">MB</span> : null}
                 </div>
                 <div className="store-details">
                     {store.address} | Updated: {lastUpdated}

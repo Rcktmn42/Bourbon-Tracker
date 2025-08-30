@@ -4,6 +4,9 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import './DeliveryAnalysis.css';
 
+const CACHE_KEY = 'delivery-analysis-cache';
+const CACHE_DURATION = 30 * 60 * 1000; // 30 minutes in milliseconds
+
 const DeliveryAnalysis = () => {
     const { user } = useAuth();
     const [searchTerm, setSearchTerm] = useState('');
@@ -15,6 +18,49 @@ const DeliveryAnalysis = () => {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
     const [expandedSections, setExpandedSections] = useState(new Set(['deliveries']));
+    const [lastCacheTime, setLastCacheTime] = useState(null);
+
+    // Cache utility functions
+    const saveToCache = (data) => {
+        const cacheData = {
+            ...data,
+            timestamp: Date.now()
+        };
+        localStorage.setItem(CACHE_KEY, JSON.stringify(cacheData));
+        setLastCacheTime(Date.now());
+    };
+
+    const loadFromCache = () => {
+        try {
+            const cached = localStorage.getItem(CACHE_KEY);
+            if (!cached) return null;
+            
+            const cacheData = JSON.parse(cached);
+            const now = Date.now();
+            
+            // Check if cache is expired (30 minutes)
+            if (now - cacheData.timestamp > CACHE_DURATION) {
+                localStorage.removeItem(CACHE_KEY);
+                return null;
+            }
+            
+            setLastCacheTime(cacheData.timestamp);
+            return cacheData;
+        } catch (error) {
+            console.error('Failed to load from cache:', error);
+            localStorage.removeItem(CACHE_KEY);
+            return null;
+        }
+    };
+
+    const clearCache = () => {
+        localStorage.removeItem(CACHE_KEY);
+        setLastCacheTime(null);
+    };
+
+    const getCacheKey = (plu, weeksBack, includeOtherDrops) => {
+        return `${plu}-${weeksBack}-${includeOtherDrops}`;
+    };
 
     const searchProducts = async (term) => {
         if (!term.trim() || term.length < 2) {
@@ -42,8 +88,22 @@ const DeliveryAnalysis = () => {
         setSearchTerm(product.name);
     };
 
-    const generateAnalysis = async () => {
+    const generateAnalysis = async (forceRefresh = false) => {
         if (!selectedProduct) return;
+
+        const cacheKey = getCacheKey(selectedProduct.plu, weeksBack, includeOtherDrops);
+        
+        // Check cache first (unless forcing refresh)
+        if (!forceRefresh) {
+            const cached = loadFromCache();
+            if (cached && cached.cacheKey === cacheKey && cached.analysis) {
+                setAnalysis(cached.analysis);
+                if (cached.analysis.deliveries.length > 0) {
+                    setExpandedSections(new Set(['deliveries']));
+                }
+                return;
+            }
+        }
 
         setLoading(true);
         setError(null);
@@ -64,6 +124,16 @@ const DeliveryAnalysis = () => {
             
             if (data.success) {
                 setAnalysis(data.analysis);
+                
+                // Save to cache
+                saveToCache({
+                    cacheKey,
+                    analysis: data.analysis,
+                    selectedProduct,
+                    weeksBack,
+                    includeOtherDrops
+                });
+                
                 // Auto-expand deliveries section if we have data
                 if (data.analysis.deliveries.length > 0) {
                     setExpandedSections(new Set(['deliveries']));
@@ -89,10 +159,11 @@ const DeliveryAnalysis = () => {
     };
 
     const getWeekDescription = () => {
-        if (weeksBack === 0) {
-            return "Current/Recent Week (last complete week + this week if in progress)";
-        }
-        return `${weeksBack} week${weeksBack > 1 ? 's' : ''} back (complete business weeks)`;
+    if (weeksBack === 0) {
+        return "This Week only (Monday through today).";
+    }
+    const n = weeksBack;
+    return `Cumulative: This week + last ${n} week${n > 1 ? 's' : ''} (through today).`;
     };
 
     const groupDeliveriesByDate = (deliveries) => {
@@ -111,6 +182,21 @@ const DeliveryAnalysis = () => {
         return bottles <= 0 ? 0 : Math.max(1, Math.ceil(bottles / bottlesPerCase));
     };
 
+    // Load cached data on component mount
+    useEffect(() => {
+        const cached = loadFromCache();
+        if (cached && cached.analysis) {
+            setSelectedProduct(cached.selectedProduct);
+            setWeeksBack(cached.weeksBack);
+            setIncludeOtherDrops(cached.includeOtherDrops);
+            setSearchTerm(cached.selectedProduct.name);
+            setAnalysis(cached.analysis);
+            if (cached.analysis.deliveries.length > 0) {
+                setExpandedSections(new Set(['deliveries']));
+            }
+        }
+    }, []);
+
     useEffect(() => {
         const debounce = setTimeout(() => {
             searchProducts(searchTerm);
@@ -121,10 +207,11 @@ const DeliveryAnalysis = () => {
 
     return (
         <div className="delivery-analysis">
-            <div className="analysis-header">
-                <h1>Delivery Analysis Report</h1>
-                <p>Analyze delivery patterns and predict future distributions</p>
-            </div>
+            <div className="analysis-container">
+                <div className="analysis-header">
+                    <h1>Delivery Analysis Report</h1>
+                    <p>Analyze delivery patterns and predict future distributions</p>
+                </div>
 
             {/* Product Search */}
             <div className="search-section">
@@ -166,13 +253,13 @@ const DeliveryAnalysis = () => {
                             value={weeksBack} 
                             onChange={(e) => setWeeksBack(parseInt(e.target.value))}
                             className="select-input"
-                        >
-                            <option value={0}>Current/Recent Week</option>
-                            <option value={1}>1 Week Back</option>
-                            <option value={2}>2 Weeks Back</option>
-                            <option value={3}>3 Weeks Back</option>
-                            <option value={4}>4 Weeks Back</option>
-                        </select>
+                            >
+                            <option value={0}>This Week (Mon–today)</option>
+                            <option value={1}>Current + Last 1 Week (cumulative to today)</option>
+                            <option value={2}>Current + Last 2 Weeks (cumulative to today)</option>
+                            <option value={3}>Current + Last 3 Weeks (cumulative to today)</option>
+                            <option value={4}>Current + Last 4 Weeks (cumulative to today)</option>
+                            </select>
                         <div className="option-description">{getWeekDescription()}</div>
                     </div>
                     
@@ -191,13 +278,35 @@ const DeliveryAnalysis = () => {
                     </div>
                 </div>
 
-                <button
-                    onClick={generateAnalysis}
-                    disabled={!selectedProduct || loading}
-                    className="generate-button"
-                >
-                    {loading ? 'Generating Analysis...' : 'Generate Report'}
-                </button>
+                <div className="action-buttons">
+                    <button
+                        onClick={() => generateAnalysis(false)}
+                        disabled={!selectedProduct || loading}
+                        className="generate-button"
+                    >
+                        {loading ? 'Generating Analysis...' : 'Generate Report'}
+                    </button>
+                    
+                    {analysis && (
+                        <button
+                            onClick={() => generateAnalysis(true)}
+                            disabled={loading}
+                            className="refresh-button"
+                            title="Refresh data (clears cache)"
+                        >
+                            {loading ? '↻ Refreshing...' : '↻ Refresh'}
+                        </button>
+                    )}
+                </div>
+                
+                {lastCacheTime && (
+                    <div className="cache-status">
+                        <small>
+                            📁 Cached data from {new Date(lastCacheTime).toLocaleString()} 
+                            (expires {new Date(lastCacheTime + CACHE_DURATION).toLocaleString()})
+                        </small>
+                    </div>
+                )}
             </div>
 
             {/* Error Display */}
@@ -271,12 +380,30 @@ const DeliveryAnalysis = () => {
                                     {Object.entries(groupDeliveriesByDate(analysis.deliveries))
                                         .sort(([a], [b]) => a.localeCompare(b))
                                         .map(([date, deliveries]) => {
-                                            const dateObj = new Date(date);
-                                            const dayName = dateObj.toLocaleDateString('en-US', { weekday: 'long' });
-                                            const formattedDate = dateObj.toLocaleDateString('en-US', { 
-                                                month: 'long', day: 'numeric', year: 'numeric' 
-                                            });
-                                            const totalCases = deliveries.reduce((sum, d) => 
+                                            const parseDeliveryDate = (dateStr) => {
+                                                // Handle date strings from database that might be ambiguous
+                                                if (dateStr.includes('T')) {
+                                                    // Full timestamp - force Eastern Time interpretation
+                                                    return new Date(dateStr.replace('T', 'T').replace(/Z?$/, '-05:00'));
+                                                } else {
+                                                    // Date only (YYYY-MM-DD) - parse as local date to avoid timezone shifts
+                                                    const [year, month, day] = dateStr.split('-').map(Number);
+                                                    return new Date(year, month - 1, day); // month is 0-indexed in JS
+                                                }
+                                                };
+
+                                                const dateObj = parseDeliveryDate(date);
+                                                const dayName = dateObj.toLocaleDateString('en-US', { 
+                                                weekday: 'long',
+                                                timeZone: 'America/New_York' // Ensure consistent display timezone
+                                                });
+                                                const formattedDate = dateObj.toLocaleDateString('en-US', { 
+                                                month: 'long', 
+                                                day: 'numeric', 
+                                                year: 'numeric',
+                                                timeZone: 'America/New_York'
+                                                });
+                                                                                        const totalCases = deliveries.reduce((sum, d) => 
                                                 sum + bottlesToCases(d.quantity, analysis.product.bottles_per_case), 0);
 
                                             return (
@@ -299,7 +426,7 @@ const DeliveryAnalysis = () => {
                                                                         <div className="store-info">
                                                                             <div className="store-name">
                                                                                 {delivery.nickname} (#{delivery.store_number})
-                                                                                {delivery.mixed_beverage && <span className="mixed-badge">MB</span>}
+                                                                                {delivery.mixed_beverage ? <span className="mixed-badge">MB</span> : null}
                                                                             </div>
                                                                             <div className="store-details">
                                                                                 {delivery.address} | {delivery.quantity} bottles
@@ -328,7 +455,7 @@ const DeliveryAnalysis = () => {
                                 className={`section-header ${expandedSections.has('otherDrops') ? 'active' : ''}`}
                                 onClick={() => toggleSection('otherDrops')}
                             >
-                                <span>🚚 Stores That Got Other Drop Products ({analysis.storesWithOtherDrops.length} stores)</span>
+                                <span>🚚 Stores That Got Other Allocated Products ({analysis.storesWithOtherDrops.length} stores)</span>
                                 <span className={`expand-icon ${expandedSections.has('otherDrops') ? 'rotated' : ''}`}>▼</span>
                             </button>
                             
@@ -348,7 +475,7 @@ const DeliveryAnalysis = () => {
                                                     <div className="store-info">
                                                         <div className="store-name">
                                                             {store.nickname} (#{store.store_number})
-                                                            {store.mixed_beverage && <span className="mixed-badge">MB</span>}
+                                                            {store.mixed_beverage ? <span className="mixed-badge">MB</span> : null}
                                                         </div>
                                                         <div className="store-details">
                                                             {store.address}<br/>
@@ -386,6 +513,7 @@ const DeliveryAnalysis = () => {
                     </div>
                 </div>
             )}
+            </div>
         </div>
     );
 };
@@ -489,7 +617,7 @@ const StoresWithoutDeliveries = ({ analysis, expandedSections, toggleSection }) 
                                     <div className="store-info">
                                         <div className="store-name">
                                             {store.nickname} (#{store.store_number})
-                                            {store.mixed_beverage && <span className="mixed-badge">MB</span>}
+                                            {store.mixed_beverage ? <span className="mixed-badge">MB</span> : null}
                                         </div>
                                         <div className="store-details">
                                             {store.address}

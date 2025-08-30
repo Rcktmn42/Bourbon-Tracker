@@ -8,7 +8,10 @@ import {
   whoami, 
   changePassword,
   verifyEmail,
-  resendVerification
+  resendVerification,
+  requestPasswordReset,
+  resetPassword,
+  verifyResetToken
 } from '../controllers/authController.js';
 
 const router = express.Router();
@@ -21,6 +24,11 @@ router.post('/logout', logout);
 // Email verification routes (public)
 router.post('/verify-email', verifyEmail);
 router.post('/resend-verification', resendVerification);
+
+// Password reset routes (public)
+router.post('/request-password-reset', requestPasswordReset);
+router.post('/reset-password', resetPassword);
+router.get('/verify-reset-token/:token', verifyResetToken);
 
 // Protected routes
 router.get('/whoami', authenticate, whoami);
