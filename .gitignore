@@ -190,7 +190,7 @@ project_files/
 /BourbonDatabase/
 
 CLAUDE.mb
-
+/.claude/
 knowledge_dump.json
 
 vite.config.js

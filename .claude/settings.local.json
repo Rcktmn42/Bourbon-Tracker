@@ -1,0 +1,22 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(sqlite3:*)",
+      "Bash(node:*)",
+      "Bash(npm install:*)",
+      "Bash(curl:*)",
+      "Bash(pkill:*)",
+      "Bash(npm start)",
+      "Bash(timeout 10s npm start)",
+      "Bash(npm run dev:*)",
+      "Bash(timeout 5s npm run dev)",
+      "Bash(kill:*)",
+      "Bash(chmod:*)",
+      "Bash(DEV_MODE=true python3 warehouse_inventory_generator.py current_month)",
+      "Bash(python3:*)",
+      "Bash(DEV_MODE=true python3 warehouse_inventory_generator.py)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}
