@@ -540,37 +540,207 @@ export async function getStoresWithoutDeliveries(req, res) {
   }
 }
 
-// NEW: Get warehouse inventory
+// Simplified warehouse inventory with better connection handling
 export async function getWarehouseInventory(req, res) {
   try {
-    const query = `
-      SELECT 
+    const { 
+      timePeriod = 'last_calendar_month',
+      productTypes,
+      hideZeroActivity = 'true',
+      searchTerm
+    } = req.query;
+
+    console.log('Warehouse inventory request:', { timePeriod, productTypes, hideZeroActivity, searchTerm });
+
+    // Calculate date ranges based on time period
+    const now = new Date();
+    let startDate, endDate;
+    
+    switch (timePeriod) {
+      case 'last_30_days':
+        startDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+        endDate = now;
+        break;
+      case 'last_90_days':
+        startDate = new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000);
+        endDate = now;
+        break;
+      case 'last_180_days':
+        startDate = new Date(now.getTime() - 180 * 24 * 60 * 60 * 1000);
+        endDate = now;
+        break;
+      case 'last_calendar_month':
+      default:
+        startDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+        endDate = new Date(now.getFullYear(), now.getMonth(), 0);
+        break;
+    }
+
+    const formatDate = (date) => date.toISOString().split('T')[0];
+    const startDateStr = formatDate(startDate);
+    const endDateStr = formatDate(endDate);
+
+    console.log('Date range:', { startDateStr, endDateStr });
+
+    // First, get basic warehouse data with a simple query
+    let baseQuery = `
+      SELECT DISTINCT
         wih.nc_code as plu,
-        COALESCE(b.name, a.brand_name) as product_name,
+        COALESCE(b.name, a.brand_name, 'Unknown Product') as product_name,
         a.retail_price,
-        a.size_ml,
-        a.bottles_per_case,
-        a.Listing_Type,
-        wih.total_available,
-        wih.listing_type as warehouse_listing_type,
-        wih.supplier_allotment,
-        wih.check_date
+        COALESCE(a.Listing_Type, 'Unknown') as listing_type,
+        a.image_path,
+        wih.total_available as current_inventory,
+        wih.check_date as current_date,
+        CASE 
+          WHEN a.nc_code IS NOT NULL AND wih.nc_code IS NOT NULL THEN 'complete'
+          WHEN a.nc_code IS NOT NULL AND wih.nc_code IS NULL THEN 'alcohol_only'  
+          WHEN a.nc_code IS NULL AND wih.nc_code IS NOT NULL THEN 'warehouse_only'
+          ELSE 'missing'
+        END as data_source
       FROM warehouse_inventory_history_v2 wih
       LEFT JOIN alcohol a ON wih.nc_code = a.nc_code
-      LEFT JOIN bourbons b ON wih.nc_code = b.plu
+      LEFT JOIN bourbons b ON wih.nc_code = b.plu  
       WHERE wih.check_date = (
         SELECT MAX(check_date) 
-        FROM warehouse_inventory_history_v2 
-        WHERE nc_code = wih.nc_code
+        FROM warehouse_inventory_history_v2 w2 
+        WHERE w2.nc_code = wih.nc_code
       )
-      AND wih.total_available > 0
-      ORDER BY COALESCE(b.name, a.brand_name) COLLATE NOCASE
     `;
+
+    // Add filters to the base query
+    let queryParams = [];
     
-    const inventory = await inventoryDb.raw(query);
-    res.json({ success: true, inventory });
+    if (!searchTerm || !searchTerm.trim()) {
+      // Only apply type filters if not searching
+      if (productTypes) {
+        const typesArray = productTypes.split(',');
+        const placeholders = typesArray.map(() => '?').join(',');
+        baseQuery += ` AND COALESCE(a.Listing_Type, 'Unknown') IN (${placeholders})`;
+        queryParams.push(...typesArray);
+      } else {
+        // Default: exclude 'Listed' products
+        baseQuery += ` AND COALESCE(a.Listing_Type, 'Unknown') IN (?, ?, ?)`;
+        queryParams.push('Allocation', 'Limited', 'Barrel');
+      }
+    }
+
+    baseQuery += ` ORDER BY COALESCE(b.name, a.brand_name) COLLATE NOCASE`;
+
+    console.log('Executing base query...');
+    const baseResults = await inventoryDb.raw(baseQuery, queryParams);
+    console.log(`Base query returned ${baseResults.length} results`);
+
+    // Now calculate analytics for each product in smaller batches to avoid connection issues
+    const enhancedResults = [];
+    const batchSize = 50; // Process in smaller batches
+    
+    for (let i = 0; i < baseResults.length; i += batchSize) {
+      const batch = baseResults.slice(i, i + batchSize);
+      const batchPlus = batch.map(item => item.plu);
+      
+      if (batchPlus.length === 0) continue;
+      
+      // Get analytics for this batch
+      const placeholders = batchPlus.map(() => '?').join(',');
+      const analyticsQuery = `
+        SELECT 
+          nc_code,
+          MAX(total_available) as peak_inventory,
+          MIN(total_available) as low_inventory,
+          COUNT(*) as data_points
+        FROM warehouse_inventory_history_v2 
+        WHERE nc_code IN (${placeholders})
+          AND check_date BETWEEN ? AND ?
+        GROUP BY nc_code
+      `;
+      
+      const analytics = await inventoryDb.raw(analyticsQuery, [...batchPlus, startDateStr, endDateStr]);
+      
+      // Create lookup map for analytics
+      const analyticsMap = {};
+      analytics.forEach(row => {
+        analyticsMap[row.nc_code] = row;
+      });
+      
+      // Enhance batch results
+      for (const item of batch) {
+        const analytic = analyticsMap[item.plu] || {};
+        enhancedResults.push({
+          ...item,
+          peak_inventory: analytic.peak_inventory || item.current_inventory || 0,
+          low_inventory: analytic.low_inventory || item.current_inventory || 0,
+          data_points: analytic.data_points || 0,
+          last_decrease_date: null, // Simplified - remove complex decrease tracking for now
+          decrease_amount: null,
+          image_url: getImagePath(item.image_path),
+          has_image: !!(item.image_path)
+        });
+      }
+    }
+
+    console.log(`Enhanced ${enhancedResults.length} results with analytics`);
+
+    // Apply client-side filtering
+    let filteredResults = enhancedResults;
+    
+    if (searchTerm && searchTerm.trim()) {
+      // Search mode: filter by search term
+      const searchLower = searchTerm.toLowerCase();
+      filteredResults = enhancedResults.filter(item => 
+        item.product_name.toLowerCase().includes(searchLower) ||
+        item.plu.toString().includes(searchTerm)
+      );
+    }
+
+    if (hideZeroActivity === 'true') {
+      filteredResults = filteredResults.filter(item => 
+        item.data_points > 0 && 
+        (item.peak_inventory > 0 || item.current_inventory > 0)
+      );
+    }
+
+    console.log(`Final filtered results: ${filteredResults.length}`);
+
+    res.json({ 
+      success: true, 
+      inventory: filteredResults,
+      meta: {
+        total_products: enhancedResults.length,
+        filtered_products: filteredResults.length,
+        products_with_images: enhancedResults.filter(i => i.has_image).length,
+        time_period: {
+          start: startDateStr,
+          end: endDateStr,
+          type: timePeriod
+        }
+      }
+    });
+
   } catch (error) {
     console.error('Error in getWarehouseInventory:', error);
+    
+    // If we have a connection timeout, try a simplified fallback
+    if (error.message.includes('Timeout') || error.message.includes('pool')) {
+      console.log('Connection timeout detected, trying simplified query...');
+      try {
+        const fallbackResults = await getSimpleWarehouseInventory();
+        res.json({ 
+          success: true, 
+          inventory: fallbackResults,
+          meta: {
+            total_products: fallbackResults.length,
+            filtered_products: fallbackResults.length,
+            products_with_images: 0,
+            fallback: true
+          }
+        });
+        return;
+      } catch (fallbackError) {
+        console.error('Fallback query also failed:', fallbackError);
+      }
+    }
+    
     res.status(500).json({ success: false, error: error.message });
   }
 }
@@ -748,3 +918,110 @@ function getCurrentMonthRange() {
     monthEnd: lastDay.toISOString().split('T')[0]
   };
 }
+
+// Image path configuration - Easy production switching
+const IMAGE_CONFIG = {
+  development: {
+    basePath: 'BourbonDatabase/alcohol_images/',
+    urlPrefix: '/api/images/'
+  },
+  production: {
+    // PRODUCTION CONFIG: Uncomment and modify for production deployment
+    // basePath: '/opt/Images/alcohol_images/',
+    // urlPrefix: '/images/',
+    basePath: 'BourbonDatabase/alcohol_images/', // Using dev config for now
+    urlPrefix: '/api/images/'
+  }
+};
+
+const getImagePath = (imagePath) => {
+  if (!imagePath) return null;
+  
+  const config = IMAGE_CONFIG[process.env.NODE_ENV] || IMAGE_CONFIG.development;
+  
+  // Convert database path: "alcohol_images\filename" to proper URL
+  const cleanPath = imagePath.replace(/alcohol_images[\\\/]/, '');
+  return `${config.urlPrefix}${cleanPath}`;
+};
+
+const fileExists = (imagePath) => {
+  if (!imagePath) return false;
+  
+  try {
+    const config = IMAGE_CONFIG[process.env.NODE_ENV] || IMAGE_CONFIG.development;
+    const cleanPath = imagePath.replace(/alcohol_images[\\\/]/, '');
+    const fullPath = `${config.basePath}${cleanPath}`;
+    
+    // For now, assume file exists if path is provided
+    // In production, you might want to actually check file existence
+    return true;
+  } catch (error) {
+    return false;
+  }
+};
+
+const logDataQualityIssues = (results, startDate, endDate) => {
+  const issues = {
+    warehouse_only: [],
+    alcohol_only: [],
+    missing_images: [],
+    missing_prices: []
+  };
+  
+  results.forEach(item => {
+    if (item.data_source === 'warehouse_only') {
+      issues.warehouse_only.push(item.plu);
+      console.error(`ERROR: Product ${item.plu} exists in warehouse but missing from alcohol table`);
+    }
+    if (item.data_source === 'alcohol_only') {
+      issues.alcohol_only.push(item.plu);
+    }
+    if (item.image_path && !item.has_image) {
+      issues.missing_images.push(item.plu);
+    }
+    if (!item.retail_price && item.data_source !== 'warehouse_only') {
+      issues.missing_prices.push(item.plu);
+    }
+  });
+  
+  console.info(`Warehouse Inventory Query (${startDate} to ${endDate}):`);
+  console.info(`- Total products: ${results.length}`);
+  console.info(`- Products with images: ${results.filter(i => i.has_image).length}`);
+  console.info(`- Missing from alcohol table: ${issues.warehouse_only.length}`);
+  console.info(`- Missing warehouse data: ${issues.alcohol_only.length}`);
+  console.info(`- Missing image files: ${issues.missing_images.length}`);
+};
+
+// Simple fallback warehouse inventory function for connection issues
+const getSimpleWarehouseInventory = async () => {
+  const query = `
+    SELECT 
+      wih.nc_code as plu,
+      COALESCE(b.name, a.brand_name, 'Unknown Product') as product_name,
+      a.retail_price,
+      COALESCE(a.Listing_Type, 'Unknown') as listing_type,
+      wih.total_available as current_inventory,
+      wih.total_available as peak_inventory,
+      wih.total_available as low_inventory,
+      1 as data_points,
+      'complete' as data_source,
+      null as last_decrease_date,
+      null as decrease_amount,
+      null as image_url,
+      0 as has_image
+    FROM warehouse_inventory_history_v2 wih
+    LEFT JOIN alcohol a ON wih.nc_code = a.nc_code
+    LEFT JOIN bourbons b ON wih.nc_code = b.plu  
+    WHERE wih.check_date = (
+      SELECT MAX(check_date) 
+      FROM warehouse_inventory_history_v2 w2 
+      WHERE w2.nc_code = wih.nc_code
+    )
+    AND COALESCE(a.Listing_Type, 'Unknown') IN ('Allocation', 'Limited', 'Barrel')
+    AND wih.total_available > 0
+    ORDER BY COALESCE(b.name, a.brand_name) COLLATE NOCASE
+    LIMIT 100
+  `;
+  
+  return await inventoryDb.raw(query);
+};

@@ -188,3 +188,9 @@ project_files/
 
 #working inventory database
 /BourbonDatabase/
+
+CLAUDE.mb
+
+knowledge_dump.json
+
+vite.config.js

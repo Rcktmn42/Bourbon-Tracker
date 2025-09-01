@@ -1,0 +1,53 @@
+# Cron Job Setup for Warehouse Inventory Reports
+#
+# Add these lines to your crontab (run: crontab -e)
+# Generates warehouse inventory reports at strategic times throughout the day
+
+# Development environment example (every 30 minutes for testing)
+# */30 * * * * /path/to/bourbon-tracker/generate_warehouse_reports.sh >> /path/to/bourbon-tracker/warehouse-reports/cron.log 2>&1
+
+# Production environment recommendations:
+
+# Generate reports 4 times daily at strategic times
+# 6:00 AM - Early morning update
+0 6 * * * /opt/bourbon-scripts/generate_warehouse_reports.sh >> /opt/warehouse-reports/cron.log 2>&1
+
+# 12:00 PM - Midday update  
+0 12 * * * /opt/bourbon-scripts/generate_warehouse_reports.sh >> /opt/warehouse-reports/cron.log 2>&1
+
+# 6:00 PM - Evening update
+0 18 * * * /opt/bourbon-scripts/generate_warehouse_reports.sh >> /opt/warehouse-reports/cron.log 2>&1
+
+# 11:00 PM - Late evening update
+0 23 * * * /opt/bourbon-scripts/generate_warehouse_reports.sh >> /opt/warehouse-reports/cron.log 2>&1
+
+# Alternative: Generate every 2 hours during business hours (8 AM - 10 PM)
+# 0 8-22/2 * * * /opt/bourbon-scripts/generate_warehouse_reports.sh >> /opt/warehouse-reports/cron.log 2>&1
+
+# Setup Instructions:
+# 
+# 1. Copy files to EC2 instance:
+#    scp warehouse_inventory_generator.py ec2-user@your-ec2:/opt/bourbon-scripts/
+#    scp generate_warehouse_reports.sh ec2-user@your-ec2:/opt/bourbon-scripts/
+#
+# 2. Make scripts executable:
+#    chmod +x /opt/bourbon-scripts/warehouse_inventory_generator.py
+#    chmod +x /opt/bourbon-scripts/generate_warehouse_reports.sh
+#
+# 3. Create directories:
+#    mkdir -p /opt/warehouse-reports
+#    mkdir -p /opt/bourbon-scripts
+#
+# 4. Set up cron job:
+#    crontab -e
+#    (add one of the lines above)
+#
+# 5. Verify cron is working:
+#    tail -f /opt/warehouse-reports/cron.log
+#
+# 6. Test manual generation:
+#    /opt/bourbon-scripts/generate_warehouse_reports.sh
+#
+# Environment Variables:
+# - NODE_ENV=production (for production paths)
+# - DEV_MODE=false (for production behavior)

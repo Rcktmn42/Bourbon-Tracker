@@ -13,7 +13,17 @@ const userDbConfig = {
   connection: {
     filename: path.join(__dirname, '..', 'data', 'database.sqlite3')
   },
-  useNullAsDefault: true
+  useNullAsDefault: true,
+  pool: {
+    min: 0,
+    max: 10,
+    acquireTimeoutMillis: 30000,
+    createTimeoutMillis: 30000,
+    destroyTimeoutMillis: 5000,
+    idleTimeoutMillis: 30000,
+    reapIntervalMillis: 1000,
+    createRetryIntervalMillis: 100
+  }
 };
 
 // Inventory Database (bourbon tracking data)
@@ -24,7 +34,17 @@ const inventoryDbConfig = {
       ? '/opt/BourbonDatabase/inventory.db'
       : path.join(__dirname, '..', '..', 'BourbonDatabase', 'inventory.db')
   },
-  useNullAsDefault: true
+  useNullAsDefault: true,
+  pool: {
+    min: 0,
+    max: 10,
+    acquireTimeoutMillis: 30000,
+    createTimeoutMillis: 30000,
+    destroyTimeoutMillis: 5000,
+    idleTimeoutMillis: 30000,
+    reapIntervalMillis: 1000,
+    createRetryIntervalMillis: 100
+  }
 };
 
 // Create database connections

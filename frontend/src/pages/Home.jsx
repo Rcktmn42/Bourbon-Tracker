@@ -60,11 +60,11 @@ export default function Home() {
                 <h3>State Warehouse</h3>
                 <div className="report-links">
                   <button 
-                    className="report-button coming-soon"
-                    disabled
+                    className="report-button primary"
+                    onClick={() => navigate('/warehouse-inventory')}
                   >
                     🏭 Warehouse Inventory
-                    <span className="report-description">Coming soon</span>
+                    <span className="report-description">State warehouse inventory levels and analytics</span>
                   </button>
                   
                   <button 

@@ -15,6 +15,7 @@ import Profile from './pages/Profile';
 import TodaysArrivals from './pages/TodaysArrivals';
 import CurrentInventory from './pages/CurrentInventory';
 import DeliveryAnalysis from './pages/DeliveryAnalysis';
+import WarehouseInventory from './pages/WarehouseInventory';
 
 // EMAIL VERIFICATION IMPORTS - Add these new imports
 import EmailVerification from './pages/EmailVerification';
@@ -171,6 +172,12 @@ function App() {
               <Route path="/delivery-analysis" element={
                 <AuthenticatedLayout>
                   <DeliveryAnalysis />
+                </AuthenticatedLayout>
+              } />
+              
+              <Route path="/warehouse-inventory" element={
+                <AuthenticatedLayout>
+                  <WarehouseInventory />
                 </AuthenticatedLayout>
               } />
               

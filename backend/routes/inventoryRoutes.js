@@ -10,7 +10,8 @@ import {
     getStoreInventoryForProduct,
     searchAllocatedProducts,
     generateDeliveryAnalysis,
-    getStoresWithoutDeliveries // ADD THIS
+    getStoresWithoutDeliveries,
+    getWarehouseInventory // ADD THIS
 } from '../controllers/inventoryController.js';
 
 const router = express.Router();
@@ -27,8 +28,10 @@ router.get('/search/:term', searchAllocatedProducts);
 router.post('/delivery-analysis', generateDeliveryAnalysis);
 router.post('/stores-without-deliveries', getStoresWithoutDeliveries); 
 
+// Warehouse inventory route - ENABLED
+router.get('/warehouse-inventory', getWarehouseInventory);
+
 // Future routes for other reports:
-// router.get('/warehouse-inventory', getWarehouseInventory);
 // router.get('/shipments', getShipments);  
 // router.get('/store-inventory/:storeId', getStoreInventory);
 // router.get('/product-history/:plu', getProductHistory);

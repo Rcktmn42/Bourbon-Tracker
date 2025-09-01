@@ -1,0 +1,6 @@
+# Python requirements for warehouse inventory report generator
+# Minimal requirements since we're using SQLite3 (built-in) and JSON (built-in)
+
+# Optional: For enhanced logging and monitoring
+# colorlog==6.7.0  # Colorized logging output
+# schedule==1.2.0  # Alternative to cron for Python-based scheduling
