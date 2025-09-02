@@ -23,16 +23,20 @@ from pathlib import Path
 import logging
 
 # Configuration
-DEV_MODE = os.getenv('DEV_MODE', 'true').lower() == 'true'
+DEV_MODE = os.getenv('DEV_MODE', 'true').lower() == 'true'  # Default to production
 DB_PATH = './BourbonDatabase/inventory.db' if DEV_MODE else '/opt/BourbonDatabase/inventory.db'
 OUTPUT_DIR = './warehouse-reports' if DEV_MODE else '/opt/warehouse-reports'
+LOG_DIR = './logs' if DEV_MODE else '/opt/logs'
+
+# Ensure log directory exists
+Path(LOG_DIR).mkdir(parents=True, exist_ok=True)
 
 # Set up logging
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(levelname)s - %(message)s',
     handlers=[
-        logging.FileHandler(f'{OUTPUT_DIR}/generator.log' if not DEV_MODE else 'generator.log'),
+        logging.FileHandler(f'{LOG_DIR}/warehouse_generator.log'),
         logging.StreamHandler()
     ]
 )
@@ -42,7 +46,35 @@ class WarehouseInventoryGenerator:
     def __init__(self):
         self.db_path = DB_PATH
         self.output_dir = Path(OUTPUT_DIR)
-        self.output_dir.mkdir(parents=True, exist_ok=True)
+        self.log_dir = Path(LOG_DIR)
+        
+        # Ensure directories exist with proper permissions
+        try:
+            self.output_dir.mkdir(parents=True, exist_ok=True)
+            self.log_dir.mkdir(parents=True, exist_ok=True)
+            
+            # Set permissions for production
+            if not DEV_MODE:
+                os.chmod(self.output_dir, 0o755)
+                os.chmod(self.log_dir, 0o755)
+                
+        except PermissionError as e:
+            logger.error(f"Permission error creating directories: {e}")
+            sys.exit(1)
+        except Exception as e:
+            logger.error(f"Error creating directories: {e}")
+            sys.exit(1)
+        
+        # Verify database exists and is accessible
+        if not Path(self.db_path).exists():
+            logger.error(f"Database not found at {self.db_path}")
+            sys.exit(1)
+            
+        if not os.access(self.db_path, os.R_OK):
+            logger.error(f"Database not readable at {self.db_path}")
+            sys.exit(1)
+            
+        logger.info(f"Initialized generator - DB: {self.db_path}, Output: {self.output_dir}")
         
     def get_date_ranges(self):
         """Calculate date ranges for all time periods"""
@@ -80,14 +112,32 @@ class WarehouseInventoryGenerator:
             }
         }
 
+    def test_database_connection(self):
+        """Test database connectivity before proceeding"""
+        try:
+            with sqlite3.connect(self.db_path, timeout=30) as conn:
+                cursor = conn.cursor()
+                cursor.execute("SELECT COUNT(*) FROM warehouse_inventory_history_v2")
+                count = cursor.fetchone()[0]
+                logger.info(f"Database connection successful - {count} inventory records found")
+                return True
+        except Exception as e:
+            logger.error(f"Database connection test failed: {e}")
+            return False
+
     def execute_query(self, query, params=None):
         """Execute query and return results"""
         try:
-            with sqlite3.connect(self.db_path) as conn:
+            with sqlite3.connect(self.db_path, timeout=30) as conn:
                 conn.row_factory = sqlite3.Row
                 cursor = conn.cursor()
                 cursor.execute(query, params or [])
                 return [dict(row) for row in cursor.fetchall()]
+        except sqlite3.OperationalError as e:
+            logger.error(f"Database operational error: {e}")
+            if "locked" in str(e).lower():
+                logger.error("Database appears to be locked. Check if other processes are using it.")
+            raise
         except Exception as e:
             logger.error(f"Database query failed: {e}")
             raise
@@ -301,8 +351,18 @@ class WarehouseInventoryGenerator:
         filepath = self.output_dir / filename
         
         try:
-            with open(filepath, 'w') as f:
+            # Write to temporary file first, then move (atomic operation)
+            temp_filepath = filepath.with_suffix('.tmp')
+            
+            with open(temp_filepath, 'w') as f:
                 json.dump(report, f, indent=2, default=str)
+            
+            # Atomic move
+            temp_filepath.rename(filepath)
+            
+            # Set file permissions for production
+            if not DEV_MODE:
+                os.chmod(filepath, 0o644)
             
             logger.info(f"Saved report to {filepath}")
             
@@ -315,16 +375,32 @@ class WarehouseInventoryGenerator:
             }
             
             metadata_file = self.output_dir / f"{time_period}_metadata.json"
-            with open(metadata_file, 'w') as f:
+            temp_metadata_file = metadata_file.with_suffix('.tmp')
+            
+            with open(temp_metadata_file, 'w') as f:
                 json.dump(metadata, f, indent=2, default=str)
+                
+            temp_metadata_file.rename(metadata_file)
+            
+            if not DEV_MODE:
+                os.chmod(metadata_file, 0o644)
                 
         except Exception as e:
             logger.error(f"Failed to save report for {time_period}: {e}")
+            # Clean up temp files
+            for temp_file in [temp_filepath, temp_metadata_file]:
+                if temp_file.exists():
+                    temp_file.unlink()
             raise
 
     def generate_all_reports(self):
         """Generate reports for all time periods"""
         logger.info("Starting warehouse inventory report generation")
+        
+        # Test database connection first
+        if not self.test_database_connection():
+            logger.error("Database connection test failed - aborting report generation")
+            sys.exit(1)
         
         try:
             date_ranges = self.get_date_ranges()
@@ -344,6 +420,10 @@ class WarehouseInventoryGenerator:
             self.generate_index_file(date_ranges)
             
             logger.info(f"Successfully generated {reports_generated} warehouse inventory reports")
+            
+            if reports_generated == 0:
+                logger.error("No reports were successfully generated")
+                sys.exit(1)
             
         except Exception as e:
             logger.error(f"Report generation failed: {e}")
@@ -367,36 +447,58 @@ class WarehouseInventoryGenerator:
                     logger.warning(f"Could not read metadata for {time_period}: {e}")
         
         index_file = self.output_dir / "reports_index.json"
+        temp_index_file = index_file.with_suffix('.tmp')
+        
         try:
-            with open(index_file, 'w') as f:
+            with open(temp_index_file, 'w') as f:
                 json.dump(index, f, indent=2, default=str)
+            
+            temp_index_file.rename(index_file)
+            
+            if not DEV_MODE:
+                os.chmod(index_file, 0o644)
+                
             logger.info(f"Generated reports index at {index_file}")
+            
         except Exception as e:
             logger.error(f"Failed to generate index file: {e}")
+            if temp_index_file.exists():
+                temp_index_file.unlink()
 
 def main():
     """Main entry point"""
-    if len(sys.argv) > 1:
-        # Allow running specific time period
-        time_periods = sys.argv[1:]
-        valid_periods = ['current_month', 'last_30_days', 'last_90_days', 'last_180_days']
-        
-        for period in time_periods:
-            if period not in valid_periods:
-                print(f"Invalid time period: {period}")
-                print(f"Valid periods: {', '.join(valid_periods)}")
-                sys.exit(1)
-        
-        generator = WarehouseInventoryGenerator()
-        date_ranges = generator.get_date_ranges()
-        
-        for period in time_periods:
-            report = generator.generate_warehouse_report(period, date_ranges[period])
-            generator.save_report(report, period)
-    else:
-        # Generate all reports
-        generator = WarehouseInventoryGenerator()
-        generator.generate_all_reports()
+    try:
+        if len(sys.argv) > 1:
+            # Allow running specific time period
+            time_periods = sys.argv[1:]
+            valid_periods = ['current_month', 'last_30_days', 'last_90_days', 'last_180_days']
+            
+            for period in time_periods:
+                if period not in valid_periods:
+                    print(f"Invalid time period: {period}")
+                    print(f"Valid periods: {', '.join(valid_periods)}")
+                    sys.exit(1)
+            
+            generator = WarehouseInventoryGenerator()
+            date_ranges = generator.get_date_ranges()
+            
+            for period in time_periods:
+                report = generator.generate_warehouse_report(period, date_ranges[period])
+                generator.save_report(report, period)
+                
+            # Generate index after specific reports
+            generator.generate_index_file(date_ranges)
+        else:
+            # Generate all reports
+            generator = WarehouseInventoryGenerator()
+            generator.generate_all_reports()
+            
+    except KeyboardInterrupt:
+        logger.info("Script interrupted by user")
+        sys.exit(0)
+    except Exception as e:
+        logger.error(f"Unexpected error: {e}")
+        sys.exit(1)
 
 if __name__ == "__main__":
     main()

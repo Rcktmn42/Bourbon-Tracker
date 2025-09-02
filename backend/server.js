@@ -111,13 +111,17 @@ const registrationLimiter = rateLimit({
 
 const reportLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: process.env.NODE_ENV === 'production' ? 50 : 1000, // Higher limits for reports
+  max: process.env.NODE_ENV === 'production' ? 200 : 1000, // Much higher limits for static file serving
   message: { error: 'Too many report requests, please try again later.' },
   standardHeaders: true,
   legacyHeaders: false,
   skip: (req) => {
     // Skip rate limiting for 304 Not Modified responses (cached data)
     return req.headers['if-none-match'] !== undefined;
+  },
+  // More lenient key generator to prevent user cascade failures
+  keyGenerator: (req) => {
+    return `reports:${req.ip}:${req.user?.user_id || 'anonymous'}`;
   }
 });
 
@@ -129,13 +133,13 @@ app.use('/api/auth/verify-email', authLimiter); // Prevent verification spam
 app.use('/api/auth/resend-verification', authLimiter); // Prevent resend spam
 
 // Static file serving for product images
-// DEVELOPMENT CONFIGURATION (current)
-const imagesPath = join(__dirname, '../BourbonDatabase/alcohol_images');
+// Environment-based configuration
+const imagesPath = process.env.NODE_ENV === 'production' 
+  ? '/opt/alcohol_images'
+  : join(__dirname, '../BourbonDatabase/alcohol_images');
+
 console.log('Serving images from:', imagesPath);
 app.use('/api/images', express.static(imagesPath));
-
-// PRODUCTION CONFIGURATION (uncomment for production deployment)
-// app.use('/images', express.static('/opt/Images/alcohol_images/'));
 
 // Health check
 app.get('/health', (req, res) => {

@@ -387,7 +387,7 @@ const WarehouseInventory = () => {
                                 <option value="Allocation">Allocation Only</option>
                                 <option value="Limited">Limited Only</option>
                                 <option value="Barrel">Barrel Only</option>
-                                <option value="all">All Products</option>
+                                {/* <option value="all">All Products</option> */}
                             </select>
                         </div>
 

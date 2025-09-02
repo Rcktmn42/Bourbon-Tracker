@@ -21,7 +21,7 @@ export async function getWarehouseInventoryReport(req, res) {
     try {
         const { timePeriod = 'current_month' } = req.query;
 
-        console.log(`Warehouse report request:`, { timePeriod });
+        console.log(`Warehouse report request:`, { timePeriod, user: req.user?.user_id });
 
         // Validate time period
         if (!VALID_TIME_PERIODS.includes(timePeriod)) {
