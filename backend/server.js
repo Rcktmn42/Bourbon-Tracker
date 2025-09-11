@@ -15,6 +15,7 @@ import adminRoutes from './routes/adminRoutes.js';
 import userRoutes from './routes/userRoutes.js';
 import inventoryRoutes from './routes/inventoryRoutes.js';
 import reportRoutes from './routes/reportRoutes.js';
+import storesRoutes from './routes/storesRoutes.js';
 
 // Middleware
 import { authenticate } from './middleware/authMiddleware.js';
@@ -120,10 +121,8 @@ const reportLimiter = rateLimit({
   skip: (req) => {
     // Skip rate limiting for 304 Not Modified responses (cached data)
     return req.headers['if-none-match'] !== undefined;
-  },
-  keyGenerator: (req) => {
-    return `reports:${req.ip}:${req.user?.user_id || 'anonymous'}`;
-  }
+  }, // <-- ADD THIS COMMA
+  // Remove the custom keyGenerator - let express-rate-limit handle IP addresses properly
 });
 
 // Apply rate limiters - but only if not in production (nginx handles it)
@@ -192,6 +191,7 @@ app.use('/api/admin', adminRoutes);
 app.use('/api/user', authenticate, userRoutes);
 app.use('/api/inventory', authenticate, inventoryRoutes);
 app.use('/api/reports', reportLimiter, authenticate, reportRoutes);
+app.use('/api/stores', authenticate, storesRoutes);
 
 // 404 handler
 app.use((req, res) => {

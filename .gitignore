@@ -189,8 +189,13 @@ project_files/
 #working inventory database
 /BourbonDatabase/
 
-CLAUDE.mb
+CLAUDE.md
 /.claude/
 knowledge_dump.json
 
 vite.config.js
+warehouse-reports/warehouse_inventory_current_month.tmp
+warehouse-reports/warehouse_inventory_last_30_days.tmp
+warehouse-reports/warehouse_inventory_last_90_days.tmp
+warehouse-reports/warehouse_inventory_last_180_days.tmp
+warehouse_inventory_generator.py

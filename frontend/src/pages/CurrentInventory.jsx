@@ -10,12 +10,14 @@ const CurrentInventory = () => {
     const [summary, setSummary] = useState({
         totalProducts: 0,
         totalBottles: 0,
-        uniqueStores: 0
+        uniqueStores: 0,
+        byListingType: {}
     });
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [searchTerm, setSearchTerm] = useState('');
     const [expandedProducts, setExpandedProducts] = useState(new Set());
+    const [selectedFilter, setSelectedFilter] = useState(null);
 
     useEffect(() => {
         fetchInventory();
@@ -30,7 +32,7 @@ const CurrentInventory = () => {
             
             if (data.success) {
                 setProducts(data.products);
-                setSummary(data.summary); // Store the summary from backend
+                setSummary(data.summary);
             } else {
                 setError(data.error);
             }
@@ -42,14 +44,26 @@ const CurrentInventory = () => {
     };
 
     const filteredProducts = useMemo(() => {
-        if (!searchTerm.trim()) return products;
+        let filtered = products;
         
-        const search = searchTerm.toLowerCase();
-        return products.filter(product => 
-            product.product_name.toLowerCase().includes(search) ||
-            product.plu.toString().includes(search)
-        );
-    }, [products, searchTerm]);
+        // Apply type filter first
+        if (selectedFilter) {
+            filtered = filtered.filter(product => 
+                product.Listing_Type === selectedFilter
+            );
+        }
+        
+        // Then apply search filter
+        if (searchTerm.trim()) {
+            const search = searchTerm.toLowerCase();
+            filtered = filtered.filter(product => 
+                product.product_name.toLowerCase().includes(search) ||
+                product.plu.toString().includes(search)
+            );
+        }
+        
+        return filtered;
+    }, [products, searchTerm, selectedFilter]);
 
     const filteredSummary = useMemo(() => {
         const totalBottles = filteredProducts.reduce((sum, p) => sum + p.total_bottles, 0);
@@ -61,13 +75,35 @@ const CurrentInventory = () => {
             // When filtering, add asterisk to show it's total stores, not filtered
             uniqueStores = `${summary.uniqueStores}*`;
         }
+
+        // Calculate filtered listing type breakdown
+        const filteredByListingType = filteredProducts.reduce((acc, product) => {
+            const type = product.Listing_Type || 'Unknown';
+            if (!acc[type]) {
+                acc[type] = { count: 0, bottles: 0 };
+            }
+            acc[type].count++;
+            acc[type].bottles += product.total_bottles;
+            return acc;
+        }, {});
         
         return {
             totalProducts: filteredProducts.length,
             totalBottles,
-            uniqueStores
+            uniqueStores,
+            byListingType: filteredByListingType
         };
     }, [filteredProducts, summary, searchTerm]);
+
+    const handleFilterClick = (type) => {
+        if (selectedFilter === type) {
+            // Clicking the active filter removes it
+            setSelectedFilter(null);
+        } else {
+            // Clicking a different filter activates it
+            setSelectedFilter(type);
+        }
+    };
 
     const toggleProduct = async (plu) => {
         const newExpanded = new Set(expandedProducts);
@@ -133,14 +169,50 @@ const CurrentInventory = () => {
         <div className="current-inventory">
             <div className="inventory-container">
                 <div className="inventory-header">
-                    <h1>Current Allocated Product Inventory</h1>
+                    <h1>Current Product Inventory</h1>
                     <p className="last-updated">
                         Last updated: {new Date().toLocaleString()}
                     </p>
                 </div>
 
                 <div className="inventory-content">
-                    {/* Search Box */}
+                    {/* Compact Summary Stats */}
+                    <div className="compact-summary">
+                        <div className="summary-stats">
+                            <div className="stat-item">
+                                <span className="stat-number">{filteredSummary.totalProducts}</span>
+                                <span className="stat-label">Products</span>
+                            </div>
+                            <div className="stat-item">
+                                <span className="stat-number">{filteredSummary.totalBottles.toLocaleString()}</span>
+                                <span className="stat-label">Bottles</span>
+                            </div>
+                            <div className="stat-item">
+                                <span className="stat-number">{filteredSummary.uniqueStores}</span>
+                                <span className="stat-label">Stores</span>
+                            </div>
+                        </div>
+                        
+                        {/* Clickable Type Breakdown */}
+                        {Object.keys(summary.byListingType).length > 0 && (
+                            <div className="type-badges">
+                                {Object.entries(summary.byListingType)
+                                    .sort(([,a], [,b]) => b.bottles - a.bottles)
+                                    .map(([type, data]) => (
+                                    <button 
+                                        key={type} 
+                                        className={`type-badge ${type.toLowerCase()} ${selectedFilter === type ? 'active' : ''}`}
+                                        onClick={() => handleFilterClick(type)}
+                                        title={`${data.count} products, ${data.bottles.toLocaleString()} bottles - Click to filter`}
+                                    >
+                                        {type} ({selectedFilter === type ? filteredSummary.totalProducts : data.count})
+                                    </button>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Search Box - Moved closer to results */}
                     <div className="search-container">
                         <input
                             type="text"
@@ -152,36 +224,15 @@ const CurrentInventory = () => {
                         <div className="search-icon">🔍</div>
                     </div>
 
-                    {/* Summary Stats */}
-                    <div className="summary-grid">
-                        <div className="summary-item">
-                            <div className="summary-number">{filteredSummary.totalProducts}</div>
-                            <div className="summary-label">Products In Stock</div>
-                        </div>
-                        <div className="summary-item">
-                            <div className="summary-number">{filteredSummary.totalBottles.toLocaleString()}</div>
-                            <div className="summary-label">Total Bottles</div>
-                        </div>
-                        <div className="summary-item">
-                            <div className="summary-number">{filteredSummary.uniqueStores}</div>
-                            <div className="summary-label">Unique Stores</div>
-                        </div>
-                    </div>
-
-                    {/* Note about filtered store count */}
-                    {searchTerm.trim() && (
-                        <div className="filter-note">
-                            <p>* Store count shows all stores with allocated products, not just filtered results</p>
-                        </div>
-                    )}
-
                     {/* Product List */}
                     <div className="product-list">
                         {filteredProducts.length === 0 ? (
                             <div className="no-results">
                                 {searchTerm ? 
                                     `No products found for "${searchTerm}"` : 
-                                    'No allocated products currently in stock'
+                                    selectedFilter ? 
+                                        `No ${selectedFilter} products currently in stock` :
+                                        'No products currently in stock'
                                 }
                             </div>
                         ) : (
@@ -196,6 +247,13 @@ const CurrentInventory = () => {
                         )}
                     </div>
 
+                    {/* Note about search filtering - moved below products */}
+                    {searchTerm.trim() && !selectedFilter && (
+                        <div className="filter-note">
+                            <p>* Store count during search may be approximate - not all store details are loaded until products are expanded</p>
+                        </div>
+                    )}
+
                     {/* Data disclaimer */}
                     <div className="disclaimer">
                         <h3>📋 Data Notes</h3>
@@ -206,6 +264,10 @@ const CurrentInventory = () => {
                         <p>
                             <strong>Store Visits:</strong> Always call ahead or visit stores to confirm product 
                             availability before making a trip.
+                        </p>
+                        <p>
+                            <strong>Product Types:</strong> Now showing all product types including Allocation, 
+                            Limited, Barrel, and Listed products with current inventory.
                         </p>
                     </div>
                 </div>

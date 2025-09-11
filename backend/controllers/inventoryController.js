@@ -96,6 +96,7 @@ export async function getTodaysArrivals(req, res) {
         t.max_today as new_quantity,
         COALESCE(p.max_previous, 0) as previous_quantity,
         a.retail_price,
+        a.Listing_Type,
         t.latest_check
       FROM todays_max t
       LEFT JOIN previous_max p ON t.store_id = p.store_id AND t.plu = p.plu
@@ -122,6 +123,7 @@ export async function getTodaysArrivals(req, res) {
       new_quantity: row.new_quantity,
       previous_quantity: row.previous_quantity,
       price: row.retail_price ? `${row.retail_price.toFixed(2)}` : 'Not Available',
+      listing_type: row.Listing_Type,
       last_updated: row.latest_check
     }));
 
@@ -188,7 +190,7 @@ export async function getInventorySummary(req, res) {
 
 // ===== NEW FUNCTIONS FOR INVENTORY REPORTS =====
 
-// Get current allocated inventory (for inventory report page)
+// Get current inventory (UPDATED to include all listing types)
 export async function getCurrentAllocatedInventory(req, res) {
   try {
     const query = `
@@ -206,29 +208,46 @@ export async function getCurrentAllocatedInventory(req, res) {
       FROM alcohol a
       LEFT JOIN bourbons b ON a.nc_code = b.plu
       LEFT JOIN current_inventory ci ON COALESCE(b.plu, a.nc_code) = ci.plu
-      WHERE a.Listing_Type IN ('Allocation', 'Limited', 'Barrel')
       GROUP BY 
         COALESCE(b.bourbon_id, a.alcohol_id),
         COALESCE(b.name, a.brand_name),
         COALESCE(b.plu, a.nc_code),
         a.retail_price, a.size_ml, a.bottles_per_case, a.image_path, a.Listing_Type
       HAVING total_bottles > 0
-      ORDER BY product_name COLLATE NOCASE
+      ORDER BY 
+        -- Sort by listing type priority, then by name
+        CASE a.Listing_Type 
+          WHEN 'Allocation' THEN 1
+          WHEN 'Limited' THEN 2  
+          WHEN 'Barrel' THEN 3
+          WHEN 'Listed' THEN 4
+          ELSE 5
+        END,
+        product_name COLLATE NOCASE
     `;
     
     const products = await inventoryDb.raw(query);
     
-    // NEW: Get unique store count across all filtered products
+    // Get unique store count across ALL products with inventory
     const uniqueStoreQuery = `
       SELECT COUNT(DISTINCT ci.store_id) as unique_stores
       FROM current_inventory ci
-      JOIN alcohol a ON ci.plu = a.nc_code
-      WHERE a.Listing_Type IN ('Allocation', 'Limited', 'Barrel')
-        AND ci.quantity > 0
+      WHERE ci.quantity > 0
     `;
     
     const uniqueStoreResult = await inventoryDb.raw(uniqueStoreQuery);
     const uniqueStoreCount = uniqueStoreResult[0]?.unique_stores || 0;
+    
+    // Calculate summary by listing type for insights
+    const summaryByType = products.reduce((acc, product) => {
+      const type = product.Listing_Type || 'Unknown';
+      if (!acc[type]) {
+        acc[type] = { count: 0, bottles: 0 };
+      }
+      acc[type].count++;
+      acc[type].bottles += product.total_bottles;
+      return acc;
+    }, {});
     
     res.json({ 
       success: true, 
@@ -236,12 +255,95 @@ export async function getCurrentAllocatedInventory(req, res) {
       summary: {
         totalProducts: products.length,
         totalBottles: products.reduce((sum, p) => sum + p.total_bottles, 0),
-        uniqueStores: uniqueStoreCount, // FIXED: Use uniqueStores instead of totalStores
-        totalStoreSlots: products.reduce((sum, p) => sum + p.stores_with_stock, 0) // Optional: Keep old calculation for reference
+        uniqueStores: uniqueStoreCount,
+        byListingType: summaryByType
       }
     });
   } catch (error) {
     console.error('Error in getCurrentAllocatedInventory:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+}
+
+// DEBUG: Add endpoint to check data sync between tables
+export async function debugDataSync(req, res) {
+  try {
+    // Check current_inventory table stats
+    const currentInvQuery = `
+      SELECT 
+        'current_inventory' as table_name,
+        COUNT(*) as total_records,
+        COUNT(CASE WHEN quantity > 0 THEN 1 END) as records_with_stock,
+        MAX(last_updated) as latest_update
+      FROM current_inventory
+    `;
+    const currentInvResult = await inventoryDb.raw(currentInvQuery);
+    
+    // Check inventory_history table stats for today
+    const today = new Date().toLocaleDateString('en-CA');
+    const historyQuery = `
+      SELECT 
+        'inventory_history' as table_name,
+        COUNT(*) as total_records,
+        COUNT(CASE WHEN quantity > 0 THEN 1 END) as records_with_stock,
+        MAX(check_time) as latest_update
+      FROM inventory_history
+      WHERE check_time LIKE ?
+    `;
+    const historyResult = await inventoryDb.raw(historyQuery, [`${today}%`]);
+    
+    // Check if any today's arrivals are missing from current_inventory
+    const missingQuery = `
+      SELECT 
+        ih.plu,
+        a.brand_name,
+        a.Listing_Type,
+        SUM(ih.quantity) as history_quantity,
+        COALESCE(SUM(ci.quantity), 0) as current_quantity
+      FROM inventory_history ih
+      JOIN alcohol a ON ih.plu = a.nc_code
+      LEFT JOIN current_inventory ci ON ih.plu = ci.plu
+      WHERE ih.check_time LIKE ?
+        AND ih.quantity > 0
+      GROUP BY ih.plu, a.brand_name, a.Listing_Type
+      HAVING history_quantity > current_quantity
+      ORDER BY a.brand_name
+      LIMIT 10
+    `;
+    const missingResult = await inventoryDb.raw(missingQuery, [`${today}%`]);
+    
+    // Check listing types in today's arrivals
+    const listingTypesQuery = `
+      SELECT 
+        a.Listing_Type,
+        COUNT(*) as count,
+        COUNT(CASE WHEN ci.quantity > 0 THEN 1 END) as in_current_inventory
+      FROM inventory_history ih
+      JOIN alcohol a ON ih.plu = a.nc_code
+      LEFT JOIN current_inventory ci ON ih.plu = ci.plu
+      WHERE ih.check_time LIKE ?
+        AND ih.quantity > 0
+      GROUP BY a.Listing_Type
+      ORDER BY count DESC
+    `;
+    const listingTypesResult = await inventoryDb.raw(listingTypesQuery, [`${today}%`]);
+    
+    res.json({
+      success: true,
+      debug_info: {
+        date_checked: today,
+        table_stats: [currentInvResult[0], historyResult[0]],
+        missing_from_current_inventory: missingResult,
+        listing_types_breakdown: listingTypesResult,
+        explanation: {
+          issue: "Current Inventory page uses 'current_inventory' table, Today's Arrivals uses 'inventory_history'",
+          filter: "Current Inventory now shows ALL listing types",
+          missing_items: `${missingResult.length} products from today found in history but not in current_inventory`
+        }
+      }
+    });
+  } catch (error) {
+    console.error('Error in debugDataSync:', error);
     res.status(500).json({ success: false, error: error.message });
   }
 }
@@ -275,7 +377,7 @@ export async function getStoreInventoryForProduct(req, res) {
   }
 }
 
-// Search allocated products (for autocomplete/search)
+// Search products (for autocomplete/search)
 export async function searchAllocatedProducts(req, res) {
   try {
     const { term } = req.params;
@@ -292,7 +394,6 @@ export async function searchAllocatedProducts(req, res) {
         FROM alcohol a
         LEFT JOIN bourbons b ON a.nc_code = b.plu
         WHERE COALESCE(b.plu, a.nc_code) = ?
-          AND a.Listing_Type IN ('Allocation', 'Limited', 'Barrel')
       `;
       params = [parseInt(term)];
     } else {
@@ -306,7 +407,6 @@ export async function searchAllocatedProducts(req, res) {
         FROM alcohol a
         LEFT JOIN bourbons b ON a.nc_code = b.plu
         WHERE COALESCE(b.name, a.brand_name) LIKE ? COLLATE NOCASE
-          AND a.Listing_Type IN ('Allocation', 'Limited', 'Barrel')
         ORDER BY name
         LIMIT 10
       `;
@@ -896,7 +996,7 @@ function getWeekRange(weeksBack = 0) {
   // Total days to walk back to the Monday N weeks ago
   const totalDaysBack = daysSinceMonday + (Number(weeksBack) || 0) * 7;
 
-  // Step back in whole days; DST won’t break day-of-week correctness here
+  // Step back in whole days; DST won't break day-of-week correctness here
   const startMoment = new Date(now.getTime() - totalDaysBack * 24 * 60 * 60 * 1000);
 
   const startET = partsOf(startMoment);

@@ -11,7 +11,8 @@ import {
     searchAllocatedProducts,
     generateDeliveryAnalysis,
     getStoresWithoutDeliveries,
-    getWarehouseInventory // ADD THIS
+    getWarehouseInventory,
+    debugDataSync
 } from '../controllers/inventoryController.js';
 
 const router = express.Router();
@@ -30,6 +31,9 @@ router.post('/stores-without-deliveries', getStoresWithoutDeliveries);
 
 // Warehouse inventory route - ENABLED
 router.get('/warehouse-inventory', getWarehouseInventory);
+
+// Debug route for data sync investigation
+router.get('/debug-data-sync', debugDataSync);
 
 // Future routes for other reports:
 // router.get('/shipments', getShipments);  

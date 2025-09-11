@@ -1,37 +1,34 @@
 {
-  "filename": "warehouse_inventory_last_90_days.json",
-  "generated_at": "2025-08-31T21:12:10.730114",
-  "time_period": {
-    "start": "2025-06-02",
-    "end": "2025-08-31",
-    "description": "Last 90 days"
-  },
-  "summary": {
-    "total_products": 3235,
-    "products_with_inventory": 2435,
-    "products_with_images": 2894,
-    "total_inventory_units": 827441,
-    "listing_type_breakdown": {
-      "Listed": {
-        "count": 2978,
-        "inventory": 816892
-      },
-      "Limited": {
-        "count": 98,
-        "inventory": 2455
-      },
-      "Unknown": {
-        "count": 2,
-        "inventory": 0
-      },
-      "Barrel": {
-        "count": 111,
-        "inventory": 139
-      },
-      "Allocation": {
-        "count": 46,
-        "inventory": 7955
-      }
+  "time_period": "last_90_days",
+  "description": "Last 90 days",
+  "generated_at": "2025-09-03 16:29:42",
+  "start_date": "2025-06-05",
+  "end_date": "2025-09-03",
+  "total_products": 3241,
+  "products_with_inventory": 2379,
+  "products_with_images": 2900,
+  "total_inventory": 783696,
+  "listing_type_counts": {
+    "Listed": {
+      "count": 2983,
+      "inventory": 780275
+    },
+    "Limited": {
+      "count": 99,
+      "inventory": 522
+    },
+    "Unknown": {
+      "count": 2,
+      "inventory": 0
+    },
+    "Barrel": {
+      "count": 111,
+      "inventory": 147
+    },
+    "Allocation": {
+      "count": 46,
+      "inventory": 2752
     }
-  }
+  },
+  "file_modified": 1756931382
 }

@@ -1,9 +1,11 @@
 // backend/controllers/authController.js
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
+import crypto from 'crypto';
 import dotenv from 'dotenv';
 import userDb from '../config/db.js';
 import emailService from '../services/emailService.js';
+import logger from '../utils/logger.js';
 
 /* dotenv.config(); */
 
@@ -529,87 +531,141 @@ export async function changePassword(req, res) {
 }
 
 /**
- * Generate secure random token for password reset
- */
-async function generatePasswordResetToken() {
-  const crypto = await import('crypto');
-  return crypto.randomBytes(32).toString('hex');
-}
-
-/**
  * Request password reset - sends email with reset link
  */
 export async function requestPasswordReset(req, res) {
-  const { email } = req.body;
-  
-  const emailError = validateEmail(email);
-  if (emailError) return res.status(400).json({ error: emailError });
+  const requestId = `reset-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+  logger.auth('INFO', `Password reset requested [${requestId}]`, {
+    email: req.body.email,
+    ip: req.ip,
+    userAgent: req.get('User-Agent')
+  });
 
   try {
-    const user = await userDb('users')
-      .select('user_id', 'first_name', 'email', 'status', 'email_verified', 'password_reset_attempts', 'password_reset_last_attempt')
-      .where('email', email.toLowerCase().trim())
-      .first();
+    const { email } = req.body;
 
-    // Always return success to prevent email enumeration attacks
-    // But only actually send email if user exists and is valid
-    if (user && user.status === 'active' && user.email_verified) {
-      // Rate limiting: max 3 reset attempts per hour
-      const now = new Date();
-      const oneHourAgo = new Date(now.getTime() - 60 * 60 * 1000);
-      
-      if (user.password_reset_attempts >= 3 && 
-          user.password_reset_last_attempt && 
-          new Date(user.password_reset_last_attempt) > oneHourAgo) {
-        
-        console.log(`⚠️ Password reset rate limited for user: ${email}`);
-        // Still return success to prevent information leakage
-        return res.json({ message: 'If an account with that email exists, a password reset link has been sent.' });
-      }
-
-      // Generate secure token
-      const resetToken = await generatePasswordResetToken();
-      const resetExpires = new Date(now.getTime() + 60 * 60 * 1000); // 1 hour from now
-
-      // Save reset token to database
-      await userDb('users')
-        .where('user_id', user.user_id)
-        .update({
-          password_reset_token: resetToken,
-          password_reset_expires: resetExpires,
-          password_reset_attempts: (user.password_reset_attempts || 0) + 1,
-          password_reset_last_attempt: now
-        });
-
-      // Send password reset email
-      const emailResult = await emailService.sendPasswordResetEmail(
-        user.email,
-        user.first_name,
-        resetToken
-      );
-
-      if (emailResult.success) {
-        console.log(`✅ Password reset email sent to: ${email}`);
-      } else {
-        console.error(`❌ Failed to send password reset email to: ${email}`, emailResult.error);
-      }
-    } else if (user) {
-      // User exists but account is not active or verified
-      console.log(`⚠️ Password reset attempted for inactive/unverified user: ${email}`);
-    } else {
-      // User doesn't exist
-      console.log(`⚠️ Password reset attempted for non-existent user: ${email}`);
+    if (!email) {
+      logger.auth('WARN', `Password reset attempt without email [${requestId}]`);
+      return res.status(400).json({ error: 'Email is required' });
     }
 
-    // Always return success message to prevent user enumeration
-    res.json({ 
-      message: 'If an account with that email exists, a password reset link has been sent.',
-      info: 'Please check your email for reset instructions. The link will expire in 1 hour.'
+    // Find user by email
+    logger.debug('AUTH_PASSWORD_RESET', `Looking up user by email [${requestId}]`, { email });
+    const user = await userDb('users').where({ email }).first();
+
+    if (!user) {
+      logger.auth('WARN', `Password reset attempted for non-existent email [${requestId}]`, { email });
+      // Don't reveal that the email doesn't exist for security
+      return res.json({
+        message: 'If an account with that email exists, you will receive a password reset link.'
+      });
+    }
+
+    // Check if user has too many recent attempts
+    const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
+    const recentAttempts = user.password_reset_attempts || 0;
+    const lastAttempt = user.password_reset_last_attempt 
+      ? new Date(user.password_reset_last_attempt) 
+      : null;
+
+    logger.debug('AUTH_PASSWORD_RESET', `Rate limiting check [${requestId}]`, {
+      userId: user.user_id,
+      recentAttempts,
+      lastAttempt: lastAttempt?.toISOString(),
+      oneHourAgo: oneHourAgo.toISOString()
     });
 
+    if (recentAttempts >= 3 && lastAttempt && lastAttempt > oneHourAgo) {
+      logger.auth('WARN', `Password reset rate limited [${requestId}]`, {
+        userId: user.user_id,
+        email: user.email,
+        attempts: recentAttempts
+      });
+      return res.status(429).json({
+        error: 'Too many password reset attempts. Please try again later.'
+      });
+    }
+
+    // Generate reset token
+    const resetToken = crypto.randomBytes(32).toString('hex');
+    const resetExpires = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
+
+    logger.debug('AUTH_PASSWORD_RESET', `Generated reset token [${requestId}]`, {
+      userId: user.user_id,
+      tokenLength: resetToken.length,
+      expiresAt: resetExpires.toISOString()
+    });
+
+    // Update user with reset token
+    const updateData = {
+      password_reset_token: resetToken,
+      password_reset_expires: resetExpires,
+      password_reset_attempts: recentAttempts + 1,
+      password_reset_last_attempt: new Date()
+    };
+
+    await userDb('users')
+      .where({ user_id: user.user_id })
+      .update(updateData);
+
+    logger.auth('INFO', `Password reset token saved to database [${requestId}]`, {
+      userId: user.user_id,
+      attempts: updateData.password_reset_attempts
+    });
+
+    // Send password reset email
+    logger.email('INFO', `Attempting to send password reset email [${requestId}]`, {
+      userId: user.user_id,
+      email: user.email,
+      firstName: user.first_name
+    });
+
+    const emailResult = await emailService.sendPasswordResetEmail(
+      user.email,
+      user.first_name,
+      resetToken
+    );
+
+    if (emailResult.success) {
+      logger.auth('SUCCESS', `Password reset email sent successfully [${requestId}]`, {
+        userId: user.user_id,
+        email: user.email,
+        messageId: emailResult.messageId,
+        emailId: emailResult.emailId
+      });
+
+      res.json({
+        message: 'If an account with that email exists, you will receive a password reset link.',
+        requestId // Include for debugging purposes
+      });
+    } else {
+      logger.error('AUTH_PASSWORD_RESET', `Failed to send password reset email [${requestId}]`, {
+        userId: user.user_id,
+        email: user.email,
+        error: emailResult.error,
+        details: emailResult.details
+      });
+
+      // Clear the reset token since email failed
+      await userDb('users')
+        .where({ user_id: user.user_id })
+        .update({
+          password_reset_token: null,
+          password_reset_expires: null
+        });
+
+      res.status(500).json({
+        error: 'Failed to send password reset email. Please try again.',
+        requestId
+      });
+    }
+
   } catch (error) {
-    console.error('Password reset request error:', error);
-    res.status(500).json({ error: 'Failed to process password reset request' });
+    logger.error('AUTH_PASSWORD_RESET', `Password reset request failed [${requestId}]`, error);
+    res.status(500).json({ 
+      error: 'Server error during password reset request',
+      requestId 
+    });
   }
 }
 
@@ -617,39 +673,74 @@ export async function requestPasswordReset(req, res) {
  * Reset password using token from email
  */
 export async function resetPassword(req, res) {
+  const resetId = `password-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
   const { token, newPassword } = req.body;
   
-  if (!token || !newPassword) {
-    return res.status(400).json({ error: 'Reset token and new password are required' });
-  }
-
-  const passwordError = validatePassword(newPassword);
-  if (passwordError) return res.status(400).json({ error: passwordError });
+  logger.auth('INFO', `Password reset attempt [${resetId}]`, {
+    tokenLength: token?.length,
+    passwordLength: newPassword?.length,
+    ip: req.ip
+  });
 
   try {
-    const now = new Date();
-    
-    // Find user with valid reset token
+    if (!token || !newPassword) {
+      logger.auth('WARN', `Password reset with missing data [${resetId}]`, {
+        hasToken: !!token,
+        hasPassword: !!newPassword
+      });
+      return res.status(400).json({
+        success: false,
+        error: 'Reset token and new password are required'
+      });
+    }
+
+    // Validate password
+    if (newPassword.length < 8 || newPassword.length > 128) {
+      logger.auth('WARN', `Password reset with invalid password length [${resetId}]`, {
+        length: newPassword.length
+      });
+      return res.status(400).json({
+        success: false,
+        error: 'Password must be between 8 and 128 characters'
+      });
+    }
+
+    // Find user with this reset token
+    logger.debug('AUTH_PASSWORD_RESET', `Looking up user by reset token [${resetId}]`);
     const user = await userDb('users')
-      .select('user_id', 'first_name', 'email', 'password_reset_token', 'password_reset_expires')
-      .where('password_reset_token', token)
-      .where('password_reset_expires', '>', now)
+      .where({ password_reset_token: token })
       .first();
 
     if (!user) {
-      return res.status(400).json({ 
-        error: 'Invalid or expired reset token',
-        code: 'INVALID_TOKEN'
+      logger.auth('WARN', `Password reset with invalid token [${resetId}]`);
+      return res.status(400).json({
+        success: false,
+        error: 'Invalid reset token'
+      });
+    }
+
+    // Check if token has expired
+    const now = new Date();
+    const expiresAt = new Date(user.password_reset_expires);
+
+    if (now > expiresAt) {
+      logger.auth('WARN', `Password reset with expired token [${resetId}]`, {
+        userId: user.user_id,
+        expiredBy: (now - expiresAt) / 1000 / 60
+      });
+      return res.status(400).json({
+        success: false,
+        error: 'Reset token has expired'
       });
     }
 
     // Hash new password
-    const saltRounds = 12;
-    const hashedPassword = await bcrypt.hash(newPassword, saltRounds);
+    logger.debug('AUTH_PASSWORD_RESET', `Hashing new password [${resetId}]`, { userId: user.user_id });
+    const hashedPassword = await bcrypt.hash(newPassword, 12);
 
     // Update password and clear reset token
     await userDb('users')
-      .where('user_id', user.user_id)
+      .where({ user_id: user.user_id })
       .update({
         password_hash: hashedPassword,
         password_reset_token: null,
@@ -659,16 +750,22 @@ export async function resetPassword(req, res) {
         updated_at: now
       });
 
-    console.log(`✅ Password reset completed for user: ${user.email}`);
+    logger.auth('SUCCESS', `Password reset completed successfully [${resetId}]`, {
+      userId: user.user_id,
+      email: user.email
+    });
 
-    res.json({ 
-      message: 'Password has been reset successfully. You can now log in with your new password.',
-      success: true
+    res.json({
+      success: true,
+      message: 'Password has been reset successfully. You can now log in with your new password.'
     });
 
   } catch (error) {
-    console.error('Password reset error:', error);
-    res.status(500).json({ error: 'Failed to reset password' });
+    logger.error('AUTH_PASSWORD_RESET', `Password reset failed [${resetId}]`, error);
+    res.status(500).json({
+      success: false,
+      error: 'Server error during password reset'
+    });
   }
 }
 
@@ -676,38 +773,78 @@ export async function resetPassword(req, res) {
  * Verify reset token (for frontend validation)
  */
 export async function verifyResetToken(req, res) {
+  const verifyId = `verify-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
   const { token } = req.params;
   
-  if (!token) {
-    return res.status(400).json({ error: 'Reset token is required' });
-  }
+  logger.auth('INFO', `Reset token verification requested [${verifyId}]`, {
+    tokenLength: token?.length,
+    ip: req.ip
+  });
 
   try {
-    const now = new Date();
-    
-    const user = await userDb('users')
-      .select('user_id', 'first_name', 'email')
-      .where('password_reset_token', token)
-      .where('password_reset_expires', '>', now)
-      .first();
-
-    if (!user) {
-      return res.status(400).json({ 
-        error: 'Invalid or expired reset token',
-        code: 'INVALID_TOKEN'
+    if (!token) {
+      logger.auth('WARN', `Token verification without token [${verifyId}]`);
+      return res.status(400).json({
+        valid: false,
+        error: 'Reset token is required'
       });
     }
 
-    res.json({ 
+    // Find user with this reset token
+    logger.debug('AUTH_TOKEN_VERIFY', `Looking up user by reset token [${verifyId}]`);
+    const user = await userDb('users')
+      .where({ password_reset_token: token })
+      .first();
+
+    if (!user) {
+      logger.auth('WARN', `Invalid reset token used [${verifyId}]`, { tokenLength: token.length });
+      return res.json({
+        valid: false,
+        error: 'Invalid reset token'
+      });
+    }
+
+    // Check if token has expired
+    const now = new Date();
+    const expiresAt = new Date(user.password_reset_expires);
+    
+    logger.debug('AUTH_TOKEN_VERIFY', `Token expiration check [${verifyId}]`, {
+      userId: user.user_id,
+      now: now.toISOString(),
+      expiresAt: expiresAt.toISOString(),
+      isExpired: now > expiresAt
+    });
+
+    if (now > expiresAt) {
+      logger.auth('WARN', `Expired reset token used [${verifyId}]`, {
+        userId: user.user_id,
+        expiredBy: (now - expiresAt) / 1000 / 60 // minutes
+      });
+      return res.json({
+        valid: false,
+        error: 'Reset token has expired'
+      });
+    }
+
+    logger.auth('SUCCESS', `Reset token verified successfully [${verifyId}]`, {
+      userId: user.user_id,
+      email: user.email
+    });
+
+    res.json({
       valid: true,
       user: {
+        user_id: user.user_id,
         first_name: user.first_name,
         email: user.email
       }
     });
 
   } catch (error) {
-    console.error('Token verification error:', error);
-    res.status(500).json({ error: 'Failed to verify reset token' });
+    logger.error('AUTH_TOKEN_VERIFY', `Token verification failed [${verifyId}]`, error);
+    res.status(500).json({
+      valid: false,
+      error: 'Server error during token verification'
+    });
   }
 }

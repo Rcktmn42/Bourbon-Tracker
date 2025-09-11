@@ -16,6 +16,7 @@ import TodaysArrivals from './pages/TodaysArrivals';
 import CurrentInventory from './pages/CurrentInventory';
 import DeliveryAnalysis from './pages/DeliveryAnalysis';
 import WarehouseInventory from './pages/WarehouseInventory';
+import Stores from './pages/Stores';
 
 // EMAIL VERIFICATION IMPORTS - Add these new imports
 import EmailVerification from './pages/EmailVerification';
@@ -41,6 +42,7 @@ function AuthenticatedLayout({ children }) {
         <nav className="main-nav">
           <div className="nav-left">
             <Link to="/">Home</Link>
+            <Link to="/stores">Stores</Link>
             {user && (user.role === 'admin' || user.role === 'power_user') && (
               <Link to="/admin">Admin</Link>
             )}
@@ -178,6 +180,13 @@ function App() {
               <Route path="/warehouse-inventory" element={
                 <AuthenticatedLayout>
                   <WarehouseInventory />
+                </AuthenticatedLayout>
+              } />
+              
+              {/* STORES ROUTE */}
+              <Route path="/stores" element={
+                <AuthenticatedLayout>
+                  <Stores />
                 </AuthenticatedLayout>
               } />
               
