@@ -113,8 +113,10 @@ const StoreDetail = () => {
   const navigate = useNavigate();
   const [store, setStore] = useState(null);
   const [inventory, setInventory] = useState([]);
+  const [allStores, setAllStores] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [canGoBack, setCanGoBack] = useState(false);
 
   const fetchStoreData = useCallback(async () => {
     try {
@@ -124,6 +126,10 @@ const StoreDetail = () => {
       const data = await response.json();
       
       if (data.success) {
+        // Set all stores for dropdown
+        setAllStores(data.stores || []);
+        
+        // Find current store
         const foundStore = data.stores.find(s => s.store_id === parseInt(storeId));
         if (foundStore) {
           setStore(foundStore);
@@ -161,7 +167,37 @@ const StoreDetail = () => {
   useEffect(() => {
     fetchStoreData();
     fetchStoreInventory();
+    
+    // Check if we can go back (user didn't directly type URL)
+    setCanGoBack(window.history.length > 1);
   }, [fetchStoreData, fetchStoreInventory]);
+
+  const handleGoBack = () => {
+    if (canGoBack && window.history.length > 1) {
+      navigate(-1);
+    } else {
+      // Fallback to stores page
+      navigate('/stores');
+    }
+  };
+
+  const handleStoreChange = (newStoreId) => {
+    if (newStoreId && newStoreId !== storeId) {
+      navigate(`/stores/${newStoreId}`);
+    }
+  };
+
+  const getBackButtonText = () => {
+    // Try to detect where user came from based on document.referrer
+    const referrer = document.referrer;
+    if (referrer.includes('/todays-arrivals')) {
+      return '← Back to Today\'s Arrivals';
+    } else if (referrer.includes('/inventory')) {
+      return '← Back to Current Inventory';
+    } else {
+      return '← Back to Stores';
+    }
+  };
 
   if (loading) {
     return (
@@ -183,8 +219,8 @@ const StoreDetail = () => {
           <div className="store-detail-error">
             <h2>Error Loading Store</h2>
             <p>{error || 'Store not found'}</p>
-            <button onClick={() => navigate('/stores')} className="back-button">
-              Back to Stores
+            <button onClick={handleGoBack} className="back-button">
+              {getBackButtonText()}
             </button>
           </div>
         </div>
@@ -197,16 +233,31 @@ const StoreDetail = () => {
       <div className="store-detail-container">
         {/* Back Navigation */}
         <div className="back-navigation">
-          <button onClick={() => navigate('/stores')} className="back-link">
-            ← Back to Stores
+          <button onClick={handleGoBack} className="back-link">
+            {getBackButtonText()}
           </button>
         </div>
 
         {/* Store Summary Section */}
         <div className="store-summary">
           <div className="store-summary-header">
-            <h1>{store.nickname}</h1>
-            <span className="store-number-display">Store #{store.store_number}</span>
+            <div className="store-selector-container">
+              <div className="store-selector-wrapper">
+                <select 
+                  value={storeId} 
+                  onChange={(e) => handleStoreChange(e.target.value)}
+                  className="store-selector"
+                >
+                  {allStores.map(storeOption => (
+                    <option key={storeOption.store_id} value={storeOption.store_id}>
+                      {storeOption.nickname} (#{storeOption.store_number})
+                    </option>
+                  ))}
+                </select>
+                <div className="store-selector-icon">▼</div>
+              </div>
+              <span className="store-number-display">Store #{store.store_number}</span>
+            </div>
           </div>
           
           <div className="store-summary-details">

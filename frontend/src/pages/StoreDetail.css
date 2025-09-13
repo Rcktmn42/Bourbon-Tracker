@@ -98,11 +98,54 @@
   padding-bottom: 20px;
 }
 
-.store-summary-header h1 {
-  color: #6a451f;
-  margin: 0 0 8px 0;
-  font-size: 2.2rem;
+/* Store Selector Styles */
+.store-selector-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.store-selector-wrapper {
+  position: relative;
+  display: inline-block;
+}
+
+.store-selector {
+  appearance: none;
+  background: white;
+  border: 2px solid #6a451f;
+  border-radius: 8px;
+  padding: 12px 40px 12px 16px;
+  font-size: 1.8rem;
   font-weight: 700;
+  color: #6a451f;
+  cursor: pointer;
+  min-width: 300px;
+  text-align: center;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  transition: all 0.2s ease;
+}
+
+.store-selector:hover {
+  border-color: #8b4513;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+.store-selector:focus {
+  outline: none;
+  border-color: #8b4513;
+  box-shadow: 0 0 0 3px rgba(139, 69, 19, 0.2);
+}
+
+.store-selector-icon {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #6a451f;
+  pointer-events: none;
+  font-size: 14px;
 }
 
 .store-number-display {
@@ -363,6 +406,64 @@
 .product-image-placeholder:hover {
   background: linear-gradient(135deg, rgba(106,69,31,0.15), rgba(90,62,27,0.15));
   border-color: #6a451f;
+}
+
+/* Mobile Responsive */
+@media (max-width: 768px) {
+  .store-detail-container {
+    padding: 0 15px;
+  }
+
+  .store-selector {
+    min-width: 280px;
+    font-size: 1.5rem;
+    padding: 10px 35px 10px 14px;
+  }
+
+  .store-selector-icon {
+    right: 10px;
+  }
+
+  .back-link {
+    font-size: 14px;
+    padding: 8px 12px;
+  }
+
+  .store-inventory-list {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+}
+
+@media (max-width: 480px) {
+  .store-selector {
+    min-width: 250px;
+    font-size: 1.3rem;
+    padding: 8px 30px 8px 12px;
+  }
+
+  .store-number-display {
+    font-size: 1rem;
+  }
+
+  .store-detail-container {
+    padding: 0 10px;
+  }
+
+  .store-summary {
+    padding: 15px;
+  }
+
+  .contact-item {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+  }
+
+  .delivery-details {
+    flex-direction: column;
+    gap: 8px;
+  }
 }
 
 .placeholder-icon {
