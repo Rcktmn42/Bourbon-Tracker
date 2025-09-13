@@ -15,14 +15,13 @@ export default function Home() {
           <h1>Welcome to WakePour</h1>
           {user && (
             <p className="welcome-message">
-              Hello, {user.first_name}! Track bourbon availability across Wake County ABC stores.
+              Hello, {user.first_name}!
             </p>
           )}
         </div>
 
         {user && (
           <div className="reports-section">
-            <h2>Bourbon Reports</h2>
             
             <div className="reports-grid">
               {/* Wake County Reports */}
@@ -49,8 +48,16 @@ export default function Home() {
                     className="report-button primary"
                     onClick={() => navigate('/delivery-analysis')}
                   >
-                    📈 Historical Trends
+                    📈 Drop Tracking
                     <span className="report-description">Delivery analysis and drop predictions</span>
+                  </button>
+                  
+                  <button 
+                    className="report-button primary"
+                    onClick={() => navigate('/stores')}
+                  >
+                    🏪 Store Information
+                    <span className="report-description">Find ABC store locations and delivery schedules</span>
                   </button>
                 </div>
               </div>
@@ -66,14 +73,6 @@ export default function Home() {
                     🏭 Warehouse Inventory
                     <span className="report-description">State warehouse inventory levels and analytics</span>
                   </button>
-                  
-                  <button 
-                    className="report-button coming-soon"
-                    disabled
-                  >
-                    📊 Allocation Tracking
-                    <span className="report-description">Coming soon</span>
-                  </button>
                 </div>
               </div>
 
@@ -82,11 +81,11 @@ export default function Home() {
                 <h3>Distribution & Shipping</h3>
                 <div className="report-links">
                   <button 
-                    className="report-button coming-soon"
-                    disabled
+                    className="report-button primary"
+                    onClick={() => navigate('/statewide-shipments')}
                   >
-                    🚚 Recent Shipments
-                    <span className="report-description">Coming soon</span>
+                    🚚 State Shipping Information
+                    <span className="report-description">Track ABC board shipments statewide</span>
                   </button>
                   
                   <button 

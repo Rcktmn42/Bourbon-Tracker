@@ -1,0 +1,684 @@
+/* frontend/src/pages/StatewideShipments.css */
+
+.shipments-page {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #f8f6f4 0%, #e8e6e4 100%);
+  padding: 20px 0;
+}
+
+.shipments-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
+/* Header */
+.shipments-header {
+  text-align: center;
+  margin-bottom: 30px;
+}
+
+.shipments-header h1 {
+  color: #6a451f;
+  margin-bottom: 10px;
+  font-size: 2.5rem;
+  font-weight: 700;
+}
+
+.shipments-subtitle {
+  color: #666;
+  font-size: 1.1rem;
+  margin: 0;
+}
+
+/* Loading and Error States */
+.shipments-loading,
+.shipments-error {
+  text-align: center;
+  padding: 60px 20px;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.loading-spinner {
+  width: 40px;
+  height: 40px;
+  border: 4px solid #f3f3f3;
+  border-top: 4px solid #6a451f;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin: 0 auto 20px;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.shipments-error h2 {
+  color: #d32f2f;
+  margin-bottom: 15px;
+}
+
+.shipments-error p {
+  color: #666;
+  margin-bottom: 20px;
+}
+
+.retry-button {
+  background: #6a451f;
+  color: white;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.retry-button:hover {
+  background: #8b5a2b;
+}
+
+/* Main Content */
+.shipments-content {
+  background: white;
+  border-radius: 12px;
+  padding: 30px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+/* Filters */
+.shipments-filters {
+  background: linear-gradient(135deg, #f9f7f5 0%, #f2f0ee 100%);
+  border: 1px solid #e8e6e4;
+  border-radius: 8px;
+  padding: 20px;
+  margin-bottom: 20px;
+}
+
+.filter-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 20px;
+  margin-bottom: 15px;
+}
+
+.date-filter-row {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+.filter-group {
+  display: flex;
+  flex-direction: column;
+}
+
+.filter-group label {
+  font-weight: 600;
+  color: #6a451f;
+  margin-bottom: 5px;
+  font-size: 14px;
+}
+
+.filter-select {
+  padding: 10px 12px;
+  border: 2px solid #e0e0e0;
+  border-radius: 6px;
+  font-size: 14px;
+  background: white;
+  transition: border-color 0.2s;
+}
+
+.filter-select:focus {
+  outline: none;
+  border-color: #6a451f;
+}
+
+.search-container {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.search-input {
+  flex: 1;
+  padding: 10px 12px;
+  border: 2px solid #e0e0e0;
+  border-radius: 6px;
+  font-size: 14px;
+  background: white;
+  transition: border-color 0.2s;
+}
+
+.search-input:focus {
+  outline: none;
+  border-color: #6a451f;
+}
+
+.search-button {
+  padding: 10px 16px;
+  background: #6a451f;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  white-space: nowrap;
+}
+
+.search-button:hover:not(:disabled) {
+  background: #8b5a2b;
+}
+
+.search-button:disabled {
+  background: #ccc;
+  cursor: not-allowed;
+}
+
+.clear-button {
+  padding: 8px 10px;
+  background: #f5f5f5;
+  color: #666;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 32px;
+}
+
+.clear-button:hover {
+  background: #e0e0e0;
+  color: #d32f2f;
+}
+
+.board-shortcuts {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.shortcut-button {
+  padding: 6px 12px;
+  background: #f8f8f8;
+  color: #666;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  min-width: 45px;
+  text-align: center;
+}
+
+.shortcut-button:hover {
+  background: #e8e8e8;
+  border-color: #6a451f;
+}
+
+.shortcut-button.active {
+  background: #6a451f;
+  color: white;
+  border-color: #6a451f;
+}
+
+.date-range-display {
+  color: #666;
+  font-size: 14px;
+  font-style: italic;
+  padding: 10px 0;
+}
+
+/* View Toggle */
+.view-toggle {
+  display: flex;
+  gap: 2px;
+  margin-bottom: 20px;
+  background: #f0f0f0;
+  border-radius: 8px;
+  padding: 4px;
+  width: fit-content;
+}
+
+.view-button {
+  padding: 10px 20px;
+  background: transparent;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 500;
+  color: #666;
+  transition: all 0.2s;
+}
+
+.view-button.active {
+  background: #6a451f;
+  color: white;
+}
+
+.view-button:hover:not(.active) {
+  background: #e0e0e0;
+}
+
+/* Results */
+.shipments-results {
+  margin-top: 20px;
+}
+
+.no-results {
+  text-align: center;
+  padding: 40px;
+  color: #666;
+  font-style: italic;
+  background: #f9f9f9;
+  border-radius: 8px;
+  border: 2px dashed #ddd;
+}
+
+/* Shipments Grid */
+.shipments-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* Shipment Cards */
+.shipment-card {
+  background: white;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  transition: all 0.3s ease;
+  overflow: hidden;
+}
+
+.shipment-card:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.shipment-card.expanded {
+  border-color: #6a451f;
+  box-shadow: 0 6px 16px rgba(106, 69, 31, 0.15);
+}
+
+.card-clickable {
+  padding: 20px;
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  margin-right: 15px;
+}
+
+.card-header.product-view {
+  justify-content: center;
+  text-align: center;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.card-header.product-view .card-title {
+  margin-bottom: 0;
+}
+
+.card-header.product-view .card-stats {
+  justify-content: center;
+}
+
+.card-title h3 {
+  margin: 0 0 4px 0;
+  font-size: 18px;
+  font-weight: 600;
+  color: #333;
+}
+
+.card-subtitle {
+  color: #666;
+  font-size: 14px;
+  font-weight: 400;
+}
+
+.card-stats {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.stat-badge {
+  background: #e8f5e8;
+  color: #4caf50;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: bold;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border: 1px solid #4caf50;
+}
+
+.cases-badge {
+  background: #f0ede8;
+  color: #6a451f;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 600;
+  border: 1px solid #d0ccc8;
+}
+
+.expand-icon {
+  color: #6a451f;
+  font-size: 16px;
+  font-weight: bold;
+  transition: transform 0.3s;
+}
+
+.shipment-card.expanded .expand-icon {
+  transform: rotate(180deg);
+}
+
+/* Card Details */
+.card-details {
+  border-top: 1px solid #e0e0e0;
+  background: #fafafa;
+  padding: 0;
+  animation: slideDown 0.3s ease-out;
+}
+
+@keyframes slideDown {
+  from {
+    max-height: 0;
+    opacity: 0;
+  }
+  to {
+    max-height: 500px;
+    opacity: 1;
+  }
+}
+
+.details-list {
+  padding: 15px 20px;
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.detail-item {
+  padding: 8px 0;
+  border-bottom: 1px solid #e8e8e8;
+}
+
+.detail-item:last-child {
+  border-bottom: none;
+}
+
+.detail-board,
+.detail-product {
+  font-weight: 500;
+  color: #333;
+  margin-bottom: 4px;
+}
+
+.detail-date-cases {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  color: #666;
+  font-size: 14px;
+  margin-left: 15px;
+}
+
+.board-list,
+.product-list {
+  margin-left: 15px;
+}
+
+.board-item,
+.product-item {
+  margin-left: 15px;
+  padding: 2px 0;
+}
+
+.product-collapsible {
+  margin-bottom: 8px;
+}
+
+.product-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 4px 8px;
+  background: #f8f8f8;
+  border-radius: 4px;
+  transition: background-color 0.2s;
+}
+
+.product-header:hover {
+  background: #f0f0f0;
+}
+
+.product-expand-icon {
+  color: #6a451f;
+  font-size: 12px;
+  margin-left: 10px;
+}
+
+.product-date-groups,
+.board-date-groups {
+  width: 100%;
+}
+
+.date-group {
+  margin-bottom: 12px;
+}
+
+.date-group-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 6px 10px;
+  background: #f5f5f5;
+  border-radius: 4px;
+  transition: background-color 0.2s;
+  margin-bottom: 4px;
+}
+
+.date-group-header:hover {
+  background: #ececec;
+}
+
+.date-expand-icon {
+  color: #6a451f;
+  font-size: 12px;
+  margin-left: 10px;
+}
+
+.detail-cases {
+  color: #6a451f;
+  font-weight: 600;
+  font-size: 14px;
+}
+
+/* Legacy styles for non-outline views */
+.detail-date {
+  color: #666;
+  font-size: 14px;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .shipments-container {
+    padding: 0 10px;
+  }
+  
+  .shipments-content {
+    padding: 20px;
+  }
+  
+  .shipments-header h1 {
+    font-size: 2rem;
+  }
+  
+  .filter-row {
+    grid-template-columns: 1fr;
+    gap: 15px;
+  }
+  
+  .date-filter-row {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  
+  .view-toggle {
+    width: 100%;
+    justify-content: center;
+  }
+  
+  .view-button {
+    flex: 1;
+    text-align: center;
+  }
+  
+  .card-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+  
+  .card-stats {
+    align-self: flex-end;
+  }
+  
+  .card-header.product-view .card-stats {
+    align-self: center;
+  }
+  
+  .detail-item {
+    grid-template-columns: 1fr;
+    gap: 4px;
+    text-align: left;
+  }
+  
+  .detail-cases {
+    text-align: left;
+    font-weight: 700;
+  }
+}
+
+@media (max-width: 480px) {
+  .shipments-header {
+    margin-bottom: 15px;
+  }
+
+  .shipments-header h1 {
+    font-size: 1.6rem;
+    margin-bottom: 5px;
+  }
+
+  .shipments-subtitle {
+    font-size: 1rem;
+    margin: 0;
+  }
+
+  .shipments-filters {
+    padding: 15px;
+    margin-bottom: 15px;
+  }
+
+  .filter-row {
+    margin-bottom: 10px;
+  }
+
+  .filter-group {
+    margin-bottom: 10px;
+  }
+
+  .filter-group label {
+    font-size: 13px;
+    margin-bottom: 3px;
+  }
+
+  .filter-select,
+  .search-input {
+    font-size: 16px; /* Prevent zoom on iOS */
+    padding: 8px 10px;
+  }
+
+  .search-container {
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  .search-button {
+    padding: 8px 10px;
+    font-size: 14px;
+  }
+
+  .date-filter-row {
+    margin-bottom: 0;
+  }
+
+  .view-toggle {
+    margin-bottom: 15px;
+  }
+
+  .view-button {
+    padding: 8px 12px;
+    font-size: 14px;
+  }
+  
+  .shipment-card {
+    margin: 0 -5px;
+  }
+  
+  .card-clickable {
+    padding: 15px;
+  }
+  
+  .details-list {
+    padding: 10px 15px;
+  }
+
+  /* Keep date and cases on same line for mobile */
+  .detail-item {
+    grid-template-columns: 1fr auto;
+    gap: 10px;
+    align-items: baseline;
+  }
+
+  .detail-cases {
+    text-align: right;
+    font-weight: 700;
+    white-space: nowrap;
+  }
+
+  /* Fix date group headers to spread date and cases apart on mobile */
+  .date-group-header .detail-date-cases {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .date-group-header .detail-date {
+    text-align: left;
+  }
+
+  .date-group-header .detail-cases {
+    text-align: right;
+  }
+}

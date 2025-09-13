@@ -1,5 +1,18 @@
 /* frontend/src/pages/CurrentInventory.css */
 
+.store-name-link {
+    cursor: pointer;
+    color: #8b4513;
+    text-decoration: underline;
+    font-weight: 500;
+    transition: color 0.2s ease;
+}
+
+.store-name-link:hover {
+    color: #a0522d;
+    text-decoration: none;
+}
+
 .current-inventory {
     min-height: 100vh;
     background: linear-gradient(135deg, #f8f6f4 0%, #e8e6e4 100%);

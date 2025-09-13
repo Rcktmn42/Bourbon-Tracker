@@ -1,13 +1,18 @@
 // frontend/src/pages/TodaysArrivals.jsx
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import './TodaysArrivals.css';
 
 export default function TodaysArrivals() {
+  const navigate = useNavigate();
   const [arrivals, setArrivals] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [summary, setSummary] = useState(null);
   const [expandedProducts, setExpandedProducts] = useState(new Set());
+  const [currentDate, setCurrentDate] = useState(new Date().toLocaleDateString('en-CA'));
+  const [availableDates, setAvailableDates] = useState([]);
+  const [navigationLoading, setNavigationLoading] = useState(false);
 
   const formatDate = (dateString) => {
     const [year, month, day] = dateString.split('-');
@@ -15,15 +20,22 @@ export default function TodaysArrivals() {
   };
 
   useEffect(() => {
-    fetchTodaysArrivals();
+    fetchArrivalsForDate(currentDate);
+    fetchAvailableDates();
   }, []);
 
-  const fetchTodaysArrivals = async () => {
+  useEffect(() => {
+    if (currentDate) {
+      fetchArrivalsForDate(currentDate);
+    }
+  }, [currentDate]);
+
+  const fetchArrivalsForDate = async (date) => {
     try {
       setLoading(true);
       setError('');
 
-      const response = await fetch('/api/inventory/todays-arrivals', {
+      const response = await fetch(`/api/inventory/todays-arrivals?date=${date}`, {
         credentials: 'include'
       });
 
@@ -40,9 +52,51 @@ export default function TodaysArrivals() {
 
     } catch (err) {
       console.error('Error fetching arrivals:', err);
-      setError('Failed to load today\'s arrivals. Please try again.');
+      setError(`Failed to load arrivals for ${formatDate(date)}. Please try again.`);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchAvailableDates = async () => {
+    try {
+      const response = await fetch('/api/inventory/available-dates?currentDate=' + currentDate, {
+        credentials: 'include'
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setAvailableDates(data.allAvailableDates || []);
+      }
+    } catch (err) {
+      console.error('Error fetching available dates:', err);
+    }
+  };
+
+  const navigateToDate = async (direction) => {
+    try {
+      setNavigationLoading(true);
+      
+      const response = await fetch(`/api/inventory/available-dates?currentDate=${currentDate}&direction=${direction}`, {
+        credentials: 'include'
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`);
+      }
+
+      const data = await response.json();
+      if (data.availableDate) {
+        setCurrentDate(data.availableDate);
+      } else {
+        setError(`No ${direction === 'previous' ? 'earlier' : 'later'} dates with arrivals found.`);
+      }
+
+    } catch (err) {
+      console.error('Error navigating dates:', err);
+      setError(`Failed to navigate to ${direction} date.`);
+    } finally {
+      setNavigationLoading(false);
     }
   };
 
@@ -88,7 +142,7 @@ export default function TodaysArrivals() {
           <div className="arrivals-error">
             <h2>Error Loading Arrivals</h2>
             <p>{error}</p>
-            <button onClick={fetchTodaysArrivals} className="retry-button">
+            <button onClick={() => fetchArrivalsForDate(currentDate)} className="retry-button">
               Try Again
             </button>
           </div>
@@ -101,11 +155,37 @@ export default function TodaysArrivals() {
     <div className="arrivals-page">
       <div className="arrivals-container">
         <div className="arrivals-header">
-          <h1>Today's Arrivals</h1>
+          <h1>Bourbon Arrivals</h1>
+          
+          <div className="date-navigation">
+            <button 
+              onClick={() => navigateToDate('previous')} 
+              disabled={navigationLoading}
+              className="nav-button prev-button"
+            >
+              ← Previous Day
+            </button>
+            
+            <div className="current-date">
+              <h2>{formatDate(currentDate)}</h2>
+              <span className="date-type">
+                {currentDate === new Date().toLocaleDateString('en-CA') ? 'Today' : 'Historical'}
+              </span>
+            </div>
+            
+            <button 
+              onClick={() => navigateToDate('next')} 
+              disabled={navigationLoading || currentDate === new Date().toLocaleDateString('en-CA')}
+              className="nav-button next-button"
+            >
+              Next Day →
+            </button>
+          </div>
+
           {summary && (
             <div className="arrivals-summary">
-              <p>{summary.total_arrivals} new deliveries detected for {formatDate(summary.date)}</p>
-              <button onClick={fetchTodaysArrivals} className="refresh-button">
+              <p>{summary.total_arrivals} inventory increases detected</p>
+              <button onClick={() => fetchArrivalsForDate(currentDate)} className="refresh-button">
                 Refresh Data
               </button>
             </div>
@@ -114,8 +194,13 @@ export default function TodaysArrivals() {
 
         {arrivals.length === 0 ? (
           <div className="no-arrivals">
-            <h2>No New Arrivals Today</h2>
-            <p>No bourbon deliveries detected yet today. Check back later or refresh to see updates.</p>
+            <h2>No Inventory Increases</h2>
+            <p>No bourbon inventory increases detected for {formatDate(currentDate)}. Try a different date using the navigation above.</p>
+            {availableDates.length > 0 && (
+              <div className="available-dates-hint">
+                <p>Recent dates with arrivals: {availableDates.slice(0, 5).map(formatDate).join(', ')}</p>
+              </div>
+            )}
           </div>
         ) : (
           <div className="arrivals-content">
@@ -127,6 +212,7 @@ export default function TodaysArrivals() {
                   locations={locations}
                   isExpanded={expandedProducts.has(bourbonName)}
                   onToggle={() => toggleProduct(bourbonName)}
+                  navigate={navigate}
                 />
               ))}
             </div>
@@ -144,7 +230,7 @@ export default function TodaysArrivals() {
   );
 }
 
-const ProductCard = ({ bourbonName, locations, isExpanded, onToggle }) => {
+const ProductCard = ({ bourbonName, locations, isExpanded, onToggle, navigate }) => {
   const totalBottles = locations.reduce((sum, loc) => sum + loc.new_quantity, 0);
   const storeCount = locations.length;
   const price = locations[0].price !== 'Not Available' ? `${locations[0].price}` : 'Price N/A';
@@ -181,7 +267,7 @@ const ProductCard = ({ bourbonName, locations, isExpanded, onToggle }) => {
         <div className="product-content">
           <div className="store-grid">
             {locations.map((location, index) => (
-              <StoreItem key={`${location.store_number}-${index}`} location={location} />
+              <StoreItem key={`${location.store_number}-${index}`} location={location} navigate={navigate} />
             ))}
           </div>
         </div>
@@ -190,7 +276,7 @@ const ProductCard = ({ bourbonName, locations, isExpanded, onToggle }) => {
   );
 };
 
-const StoreItem = ({ location }) => {
+const StoreItem = ({ location, navigate }) => {
   const lastUpdated = location.last_updated ? 
     new Date(location.last_updated).toLocaleDateString() : 'Today';
   
@@ -198,21 +284,25 @@ const StoreItem = ({ location }) => {
     <div className="store-item">
       <div className="store-info">
         <div className="store-name">
-          {location.store_nickname || `Store ${location.store_number}`} (#{location.store_number})
+          <span 
+            className="store-name-link"
+            onClick={() => navigate(`/stores/${location.store_id}`)}
+          >
+            {location.store_nickname || `Store ${location.store_number}`} (#{location.store_number})
+          </span>
         </div>
         <div className="store-details">
           {location.store_address} | Updated: {lastUpdated}
         </div>
-        {location.previous_quantity > 0 && (
-          <div className="arrival-info">
-            +{location.new_quantity - location.previous_quantity} from previous stock
-          </div>
-        )}
-        {location.previous_quantity === 0 && (
-          <div className="arrival-info new-stock">
-            New arrival at this location!
-          </div>
-        )}
+        <div className={`arrival-info ${location.change_type}`}>
+          {location.change_type === 'first' ? (
+            <span className="first-arrival">First time stocked!</span>
+          ) : (
+            <span className="increase">
+              +{location.delta || (location.new_quantity - location.previous_quantity)} from previous stock
+            </span>
+          )}
+        </div>
       </div>
       <div className="quantity-badge">{location.new_quantity}</div>
     </div>

@@ -6,7 +6,8 @@ import {
   getStoreById,
   searchStores,
   getStoresByMixedBeverage,
-  getStoresByDeliveryDay
+  getStoresByDeliveryDay,
+  getStoreInventory
 } from '../controllers/storesController.js';
 
 const router = express.Router();
@@ -25,6 +26,9 @@ router.get('/region/:region', getStoresByRegion);
 
 // GET /api/stores/delivery-day/:day - Get stores by delivery day (Monday, Tuesday, etc.)
 router.get('/delivery-day/:day', getStoresByDeliveryDay);
+
+// GET /api/stores/:id/inventory - Get store inventory
+router.get('/:id/inventory', getStoreInventory);
 
 // GET /api/stores/:id - Get individual store by ID
 router.get('/:id', getStoreById);

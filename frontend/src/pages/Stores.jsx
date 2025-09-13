@@ -1,10 +1,12 @@
 // frontend/src/pages/Stores.jsx
 import React, { useState, useEffect, useMemo } from 'react';
 import { useAuth } from '../contexts/AuthContext';
+import { useNavigate } from 'react-router-dom';
 import './Stores.css';
 
 const Stores = () => {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [stores, setStores] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -64,13 +66,13 @@ const Stores = () => {
   }, [stores, searchTerm, selectedMixedBeverage, selectedDeliveryDay]);
 
 
-  // Summary statistics
+  // Summary statistics (based on all stores, not filtered)
   const summary = useMemo(() => {
     return {
-      total: filteredStores.length,
-      mixedBeverage: filteredStores.filter(store => store.mixed_beverage === 1).length
+      total: stores.length,
+      mixedBeverage: stores.filter(store => store.mixed_beverage === 1).length
     };
-  }, [filteredStores]);
+  }, [stores]);
 
   if (loading) {
     return (
@@ -100,6 +102,10 @@ const Stores = () => {
       </div>
     );
   }
+
+  const handleStoreClick = (storeId) => {
+    navigate(`/stores/${storeId}`);
+  };
 
   return (
     <div className="stores-page">
@@ -200,7 +206,7 @@ const Stores = () => {
               </div>
             ) : (
               filteredStores.map(store => (
-                <StoreCard key={store.store_id} store={store} />
+                <StoreCard key={store.store_id} store={store} onStoreClick={handleStoreClick} />
               ))
             )}
           </div>
@@ -230,7 +236,7 @@ const Stores = () => {
   );
 };
 
-const StoreCard = ({ store }) => {
+const StoreCard = ({ store, onStoreClick }) => {
   // Format last delivery date
   const formatDate = (dateString) => {
     if (!dateString) return 'Not available';
@@ -249,7 +255,13 @@ const StoreCard = ({ store }) => {
       <div className="store-header">
         <div className="store-title">
           <h3 className="store-name">
-            {store.nickname} 
+            <button 
+              className="store-name-link"
+              onClick={() => onStoreClick(store.store_id)}
+              title={`View details for ${store.nickname}`}
+            >
+              {store.nickname}
+            </button>
             <span className="store-number">(#{store.store_number})</span>
           </h3>
           <div className="store-badges">

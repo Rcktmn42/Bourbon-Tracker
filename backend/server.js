@@ -16,12 +16,16 @@ import userRoutes from './routes/userRoutes.js';
 import inventoryRoutes from './routes/inventoryRoutes.js';
 import reportRoutes from './routes/reportRoutes.js';
 import storesRoutes from './routes/storesRoutes.js';
+import stateRoutes from './routes/stateRoutes.js';
 
 // Middleware
 import { authenticate } from './middleware/authMiddleware.js';
 
 // Config
 dotenv.config();
+
+// Initialize database with safety measures
+import databaseManager from './config/databaseSafety.js';
 
 const requiredEnvVars = ['JWT_SECRET', 'EMAIL_USER', 'EMAIL_PASS'];
 requiredEnvVars.forEach(envVar => {
@@ -161,8 +165,8 @@ app.use('/api/images', express.static(imagesPath, {
   }
 }));
 
-// Health check with detailed info
-app.get('/health', (req, res) => {
+// Health check with detailed info including database status
+app.get('/health', async (req, res) => {
   const healthInfo = {
     status: 'OK',
     timestamp: new Date().toISOString(),
@@ -173,6 +177,18 @@ app.get('/health', (req, res) => {
       total: Math.round(process.memoryUsage().heapTotal / 1024 / 1024)
     }
   };
+  
+  // Add database health check
+  try {
+    const dbHealth = await databaseManager.healthCheck();
+    healthInfo.database = dbHealth;
+    
+    // Add pool statistics
+    healthInfo.connectionPools = databaseManager.getPoolStats();
+  } catch (error) {
+    healthInfo.database = { status: 'error', message: error.message };
+    healthInfo.status = 'DEGRADED';
+  }
   
   // Additional production health checks
   if (isProduction) {
@@ -192,6 +208,7 @@ app.use('/api/user', authenticate, userRoutes);
 app.use('/api/inventory', authenticate, inventoryRoutes);
 app.use('/api/reports', reportLimiter, authenticate, reportRoutes);
 app.use('/api/stores', authenticate, storesRoutes);
+app.use('/api/state', authenticate, stateRoutes);
 
 // 404 handler
 app.use((req, res) => {
@@ -221,49 +238,74 @@ app.use((err, req, res, next) => {
   res.status(500).json(errorResponse);
 });
 
-// Start server
+// Initialize database and start server
 const PORT = process.env.PORT || 3000;
-const server = app.listen(PORT, () => {
-  console.log(`\n🚀 Server running on port ${PORT}`);
-  console.log(`📦 Environment: ${isProduction ? 'PRODUCTION' : 'DEVELOPMENT'}`);
-  console.log(`🖼️  Images served from: ${imagesPath}`);
-  
-  if (isProduction) {
-    console.log('🌐 Production features enabled:');
-    console.log('   • Nginx reverse proxy expected');
-    console.log('   • Enhanced security headers');
-    console.log('   • Optimized rate limiting');
-    console.log('   • Image serving via nginx (with Node.js fallback)');
-  } else {
-    console.log('🛠️  Development mode active:');
-    console.log('   • CORS enabled for localhost:5173');
-    console.log('   • Detailed error messages');
-    console.log('   • Images served directly by Node.js');
+
+async function startServer() {
+  try {
+    // Initialize database connections with safety measures
+    console.log('🔧 Initializing database connections...');
+    await databaseManager.initialize();
+    
+    // Start server after database is ready
+    const server = app.listen(PORT, () => {
+      console.log(`\n🚀 Server running on port ${PORT}`);
+      console.log(`📦 Environment: ${isProduction ? 'PRODUCTION' : 'DEVELOPMENT'}`);
+      console.log(`🖼️  Images served from: ${imagesPath}`);
+      console.log(`🗄️  Database connections: User DB + Inventory DB with safety pragmas`);
+      
+      if (isProduction) {
+        console.log('🌐 Production features enabled:');
+        console.log('   • Nginx reverse proxy expected');
+        console.log('   • Enhanced security headers');
+        console.log('   • Optimized rate limiting');
+        console.log('   • Image serving via nginx (with Node.js fallback)');
+        console.log('   • Database connection pooling and WAL mode');
+      } else {
+        console.log('🛠️  Development mode active:');
+        console.log('   • CORS enabled for localhost:5173');
+        console.log('   • Detailed error messages');
+        console.log('   • Images served directly by Node.js');
+        console.log('   • Database connection pooling enabled');
+      }
+      
+      console.log('📊 External Python scripts handle warehouse report generation');
+      console.log('✅ Server ready for connections\n');
+    });
+    
+    return server;
+  } catch (error) {
+    console.error('❌ Failed to start server:', error);
+    process.exit(1);
   }
-  
-  console.log('📊 External Python scripts handle warehouse report generation');
-  console.log('✅ Server ready for connections\n');
-});
+}
+
+const server = await startServer();
 
 // Graceful shutdown handling
-const gracefulShutdown = (signal) => {
+const gracefulShutdown = async (signal) => {
   console.log(`\n📟 Received ${signal}. Starting graceful shutdown...`);
   
-  server.close((err) => {
-    if (err) {
-      console.error('❌ Error during server shutdown:', err);
-      process.exit(1);
-    }
-    
+  try {
+    // Close HTTP server first
+    await new Promise((resolve, reject) => {
+      server.close((err) => {
+        if (err) reject(err);
+        else resolve();
+      });
+    });
     console.log('✅ HTTP server closed gracefully');
+    
+    // Close database connections
+    await databaseManager.shutdown();
+    
+    console.log('✅ Graceful shutdown completed');
     process.exit(0);
-  });
-  
-  // Force shutdown after 10 seconds
-  setTimeout(() => {
-    console.log('⏰ Force shutdown after timeout');
+    
+  } catch (error) {
+    console.error('❌ Error during graceful shutdown:', error);
     process.exit(1);
-  }, 10000);
+  }
 };
 
 process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));

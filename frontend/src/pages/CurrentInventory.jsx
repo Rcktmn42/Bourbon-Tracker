@@ -1,11 +1,13 @@
 // frontend/src/pages/CurrentInventory.jsx
 
 import React, { useState, useEffect, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import './CurrentInventory.css';
 
 const CurrentInventory = () => {
     const { user } = useAuth();
+    const navigate = useNavigate();
     const [products, setProducts] = useState([]);
     const [summary, setSummary] = useState({
         totalProducts: 0,
@@ -136,6 +138,7 @@ const CurrentInventory = () => {
         setExpandedProducts(newExpanded);
     };
 
+
     if (loading) {
         return (
             <div className="current-inventory">
@@ -242,6 +245,7 @@ const CurrentInventory = () => {
                                     product={product}
                                     isExpanded={expandedProducts.has(product.plu)}
                                     onToggle={() => toggleProduct(product.plu)}
+                                    navigate={navigate}
                                 />
                             ))
                         )}
@@ -276,7 +280,37 @@ const CurrentInventory = () => {
     );
 };
 
-const ProductCard = ({ product, isExpanded, onToggle }) => {
+// StoreItem component defined outside to be accessible by ProductCard
+const StoreItem = ({ store, navigate }) => {
+    const lastUpdated = store.last_updated ? 
+        new Date(store.last_updated).toLocaleDateString() : 'Unknown';
+    
+    const handleStoreClick = () => {
+        navigate(`/stores/${store.store_id}`);
+    };
+    
+    return (
+        <div className={`store-item ${store.mixed_beverage ? 'mixed' : ''}`}>
+            <div className="store-info">
+                <div className="store-name">
+                    <span 
+                        className="store-name-link" 
+                        onClick={handleStoreClick}
+                    >
+                        {store.nickname} (#{store.store_number})
+                    </span>
+                    {store.mixed_beverage ? <span className="mixed-badge">MB</span> : null}
+                </div>
+                <div className="store-details">
+                    {store.address} | Updated: {lastUpdated}
+                </div>
+            </div>
+            <div className="quantity-badge">{store.quantity}</div>
+        </div>
+    );
+};
+
+const ProductCard = ({ product, isExpanded, onToggle, navigate }) => {
     const price = product.retail_price ? `$${product.retail_price.toFixed(2)}` : 'Price N/A';
     const listingType = product.Listing_Type?.toLowerCase() || 'unknown';
     
@@ -310,7 +344,7 @@ const ProductCard = ({ product, isExpanded, onToggle }) => {
                     {product.stores ? (
                         <div className="store-grid">
                             {product.stores.map(store => (
-                                <StoreItem key={store.store_id} store={store} />
+                                <StoreItem key={store.store_id} store={store} navigate={navigate} />
                             ))}
                         </div>
                     ) : (
@@ -318,26 +352,6 @@ const ProductCard = ({ product, isExpanded, onToggle }) => {
                     )}
                 </div>
             )}
-        </div>
-    );
-};
-
-const StoreItem = ({ store }) => {
-    const lastUpdated = store.last_updated ? 
-        new Date(store.last_updated).toLocaleDateString() : 'Unknown';
-    
-    return (
-        <div className={`store-item ${store.mixed_beverage ? 'mixed' : ''}`}>
-            <div className="store-info">
-                <div className="store-name">
-                    {store.nickname} (#{store.store_number})
-                    {store.mixed_beverage ? <span className="mixed-badge">MB</span> : null}
-                </div>
-                <div className="store-details">
-                    {store.address} | Updated: {lastUpdated}
-                </div>
-            </div>
-            <div className="quantity-badge">{store.quantity}</div>
         </div>
     );
 };

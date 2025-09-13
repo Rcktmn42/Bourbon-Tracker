@@ -1,5 +1,18 @@
 /* frontend/src/pages/TodaysArrivals.css */
 
+.store-name-link {
+    cursor: pointer;
+    color: #8b4513;
+    text-decoration: underline;
+    font-weight: 500;
+    transition: color 0.2s ease;
+}
+
+.store-name-link:hover {
+    color: #a0522d;
+    text-decoration: none;
+}
+
 .arrivals-page {
   min-height: 100vh;
   background: linear-gradient(135deg, #f8f6f4 0%, #e8e6e4 100%);
@@ -20,9 +33,66 @@
 
 .arrivals-header h1 {
   color: #6a451f;
-  margin-bottom: 10px;
+  margin-bottom: 20px;
   font-size: 2.5rem;
   font-weight: 700;
+}
+
+/* Date Navigation */
+.date-navigation {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 2rem;
+  margin-bottom: 20px;
+  background: white;
+  padding: 20px;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.nav-button {
+  background: #8b4513;
+  color: white;
+  border: none;
+  padding: 12px 20px;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  min-width: 130px;
+}
+
+.nav-button:hover:not(:disabled) {
+  background: #a0522d;
+  transform: translateY(-1px);
+}
+
+.nav-button:disabled {
+  background: #ccc;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.current-date {
+  text-align: center;
+  min-width: 200px;
+}
+
+.current-date h2 {
+  color: #6a451f;
+  margin: 0;
+  font-size: 1.8rem;
+  font-weight: 600;
+}
+
+.date-type {
+  color: #888;
+  font-size: 0.85rem;
+  font-weight: 400;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 
 .arrivals-summary {
@@ -311,6 +381,89 @@
 .arrival-info.new-stock {
   color: #d32f2f;
   background: #ffebee;
+}
+
+.arrival-info.first {
+  color: #f57c00;
+  background: #fff3e0;
+}
+
+.arrival-info.up {
+  color: #388e3c;
+  background: #e8f5e8;
+}
+
+.first-arrival {
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.increase {
+  font-weight: 600;
+}
+
+.available-dates-hint {
+  margin-top: 20px;
+  padding: 15px;
+  background: #f5f5f5;
+  border-radius: 6px;
+  color: #666;
+}
+
+.available-dates-hint p {
+  margin: 0;
+  font-size: 0.9rem;
+}
+
+/* Mobile Responsive */
+@media (max-width: 768px) {
+  .date-navigation {
+    flex-direction: column;
+    gap: 1rem;
+    padding: 15px;
+  }
+
+  .nav-button {
+    width: 100%;
+    max-width: 200px;
+  }
+
+  .current-date h2 {
+    font-size: 1.5rem;
+  }
+
+  .arrivals-header h1 {
+    font-size: 2rem;
+  }
+
+  .arrivals-container {
+    padding: 0 15px;
+  }
+}
+
+@media (max-width: 480px) {
+  .date-navigation {
+    padding: 10px;
+  }
+
+  .nav-button {
+    padding: 10px 15px;
+    font-size: 0.85rem;
+    min-width: 120px;
+  }
+
+  .current-date h2 {
+    font-size: 1.3rem;
+  }
+
+  .arrivals-header h1 {
+    font-size: 1.8rem;
+  }
+
+  .store-grid {
+    grid-template-columns: 1fr;
+  }
 }
 
 .quantity-badge {

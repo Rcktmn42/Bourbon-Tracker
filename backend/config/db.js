@@ -1,56 +1,36 @@
 // backend/config/db.js
-import knex from 'knex';
-import path from 'path';
-import { fileURLToPath } from 'url';
-import { dirname } from 'path';
+// This file now proxies to the new databaseSafety.js for improved connection management
+import databaseManager from './databaseSafety.js';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
+// Get the safe database connections from the manager
+const getUserDb = () => databaseManager.getUserDb();
+const getInventoryDb = () => databaseManager.getInventoryDb();
 
-// User/Authentication Database (existing)
-const userDbConfig = {
-  client: 'sqlite3',
-  connection: {
-    filename: path.join(__dirname, '..', 'data', 'database.sqlite3')
-  },
-  useNullAsDefault: true,
-  pool: {
-    min: 0,
-    max: 10,
-    acquireTimeoutMillis: 30000,
-    createTimeoutMillis: 30000,
-    destroyTimeoutMillis: 5000,
-    idleTimeoutMillis: 30000,
-    reapIntervalMillis: 1000,
-    createRetryIntervalMillis: 100
-  }
-};
+// Create function-based proxies that properly handle Knex query builder
+function createDatabaseProxy(getDbFunction) {
+  return new Proxy(function() {
+    // Handle function calls like userDb('table_name')
+    const db = getDbFunction();
+    return db.apply(null, arguments);
+  }, {
+    get: (target, prop) => {
+      // Handle property access like userDb.raw(), userDb.transaction(), etc.
+      const db = getDbFunction();
+      const value = db[prop];
+      return typeof value === 'function' ? value.bind(db) : value;
+    },
+    apply: (target, thisArg, argumentsList) => {
+      // Handle direct function calls
+      const db = getDbFunction();
+      return db.apply(thisArg, argumentsList);
+    }
+  });
+}
 
-// Inventory Database (bourbon tracking data)
-const inventoryDbConfig = {
-  client: 'sqlite3',
-  connection: {
-    filename: process.env.NODE_ENV === 'production' 
-      ? '/opt/BourbonDatabase/inventory.db'
-      : path.join(__dirname, '..', '..', 'BourbonDatabase', 'inventory.db')
-  },
-  useNullAsDefault: true,
-  pool: {
-    min: 0,
-    max: 10,
-    acquireTimeoutMillis: 30000,
-    createTimeoutMillis: 30000,
-    destroyTimeoutMillis: 5000,
-    idleTimeoutMillis: 30000,
-    reapIntervalMillis: 1000,
-    createRetryIntervalMillis: 100
-  }
-};
+// Create proxies for both databases
+const userDb = createDatabaseProxy(getUserDb);
+const inventoryDb = createDatabaseProxy(getInventoryDb);
 
-// Create database connections
-const userDb = knex(userDbConfig);
-const inventoryDb = knex(inventoryDbConfig);
-
-// Export both connections
-export default userDb;  // Keep existing default export for user operations
-export { userDb, inventoryDb };
+// Export both connections (maintaining existing API)
+export default userDb;  // Keep existing default export for user operations  
+export { userDb, inventoryDb, databaseManager };

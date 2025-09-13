@@ -12,7 +12,8 @@ import {
     generateDeliveryAnalysis,
     getStoresWithoutDeliveries,
     getWarehouseInventory,
-    debugDataSync
+    debugDataSync,
+    getAvailableDates
 } from '../controllers/inventoryController.js';
 
 const router = express.Router();
@@ -20,6 +21,7 @@ const router = express.Router();
 // Your existing routes
 router.get('/test', testDatabase);
 router.get('/todays-arrivals', getTodaysArrivals);
+router.get('/available-dates', getAvailableDates);
 router.get('/summary', getInventorySummary);
 
 // NEW ROUTES for inventory reports

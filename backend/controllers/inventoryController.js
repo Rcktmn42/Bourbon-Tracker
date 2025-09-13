@@ -64,83 +64,148 @@ export async function testDatabase(req, res) {
   }
 }
 
-// Get today's bourbon arrivals/deliveries
+// Get arrivals for a specific date (shows 'up' and 'first' change types)
 export async function getTodaysArrivals(req, res) {
   try {
-    // Get today's date in local timezone (not UTC)
-    const today = new Date().toLocaleDateString('en-CA'); // Returns YYYY-MM-DD in local timezone
-    const threeWeeksAgo = new Date(Date.now() - (21 * 24 * 60 * 60 * 1000)).toLocaleDateString('en-CA');
+    // Get date from query parameter or default to today
+    const requestedDate = req.query.date || new Date().toLocaleDateString('en-CA');
     
     const query = `
-      WITH todays_max AS (
-        -- Max quantity per PLU/store today
-        SELECT store_id, plu, MAX(quantity) as max_today, MAX(check_time) as latest_check
-        FROM inventory_history 
-        WHERE check_time LIKE ?
-        GROUP BY store_id, plu
-      ),
-      previous_max AS (
-        -- Max quantity per PLU/store in previous 3 weeks
-        SELECT store_id, plu, MAX(quantity) as max_previous
-        FROM inventory_history 
-        WHERE check_time >= ?
-          AND check_time < ?
-        GROUP BY store_id, plu
-      )
       SELECT 
         COALESCE(b.name, a.brand_name) as bourbon_name,
-        t.plu,
+        ih.plu,
         s.store_number,
+        s.store_id,
         s.address, 
         s.nickname,
-        t.max_today as new_quantity,
-        COALESCE(p.max_previous, 0) as previous_quantity,
+        ih.quantity as new_quantity,
+        COALESCE(prev.prev_quantity, 0) as previous_quantity,
         a.retail_price,
         a.Listing_Type,
-        t.latest_check
-      FROM todays_max t
-      LEFT JOIN previous_max p ON t.store_id = p.store_id AND t.plu = p.plu
-      JOIN stores s ON t.store_id = s.store_id
-      LEFT JOIN bourbons b ON t.plu = b.plu
-      LEFT JOIN alcohol a ON t.plu = a.nc_code
-      WHERE t.max_today > COALESCE(p.max_previous, 0)
+        ih.check_time,
+        ih.change_type,
+        ih.delta
+      FROM inventory_history ih
+      JOIN stores s ON ih.store_id = s.store_id
+      LEFT JOIN bourbons b ON ih.plu = b.plu
+      LEFT JOIN alcohol a ON ih.plu = a.nc_code
+      LEFT JOIN (
+        -- Get the previous quantity before this change
+        SELECT 
+          store_id, 
+          plu, 
+          quantity as prev_quantity,
+          ROW_NUMBER() OVER (PARTITION BY store_id, plu ORDER BY check_time DESC) as rn
+        FROM inventory_history 
+        WHERE DATE(check_time) < ?
+      ) prev ON ih.store_id = prev.store_id 
+        AND ih.plu = prev.plu 
+        AND prev.rn = 1
+      WHERE DATE(ih.check_time) = ?
+        AND ih.change_type IN ('up', 'first')
+        AND ih.quantity > 0
       ORDER BY bourbon_name, s.store_number;
     `;
 
-    const results = await inventoryDb.raw(query, [
-      `${today}%`,        // Today's records
-      threeWeeksAgo,      // 3 weeks ago start
-      `${today}%`         // Before today
-    ]);
+    const results = await inventoryDb.raw(query, [requestedDate, requestedDate]);
 
-    // SQLite returns results in results[0]
     const arrivals = results.map(row => ({
       bourbon_name: row.bourbon_name,
       plu: row.plu,
       store_number: row.store_number,
+      store_id: row.store_id,
       store_address: row.address,
       store_nickname: row.nickname,
       new_quantity: row.new_quantity,
       previous_quantity: row.previous_quantity,
-      price: row.retail_price ? `${row.retail_price.toFixed(2)}` : 'Not Available',
+      price: row.retail_price ? `$${row.retail_price.toFixed(2)}` : 'Not Available',
       listing_type: row.Listing_Type,
-      last_updated: row.latest_check
+      last_updated: row.check_time,
+      change_type: row.change_type,
+      delta: row.delta
     }));
 
     res.json({
-      date: today,
+      date: requestedDate,
       total_arrivals: arrivals.length,
-      arrivals: arrivals,
-      debug: {
-        query_date: today,
-        three_weeks_ago: threeWeeksAgo
-      }
+      arrivals: arrivals
     });
 
   } catch (error) {
-    console.error('Error fetching today\'s arrivals:', error);
+    console.error('Error fetching arrivals:', error);
     res.status(500).json({ 
-      error: 'Failed to fetch today\'s arrivals',
+      error: 'Failed to fetch arrivals',
+      details: error.message 
+    });
+  }
+}
+
+// Get available dates for navigation (dates that have inventory changes)
+export async function getAvailableDates(req, res) {
+  try {
+    const { currentDate, direction = 'previous' } = req.query;
+    
+    if (!currentDate) {
+      return res.status(400).json({ 
+        error: 'currentDate parameter is required' 
+      });
+    }
+
+    let query, params;
+    
+    if (direction === 'previous') {
+      // Get previous date with data
+      query = `
+        SELECT DISTINCT DATE(check_time) as available_date
+        FROM inventory_history 
+        WHERE DATE(check_time) < ?
+          AND change_type IN ('up', 'first')
+          AND quantity > 0
+        ORDER BY available_date DESC
+        LIMIT 1
+      `;
+      params = [currentDate];
+    } else {
+      // Get next date with data
+      query = `
+        SELECT DISTINCT DATE(check_time) as available_date
+        FROM inventory_history 
+        WHERE DATE(check_time) > ?
+          AND change_type IN ('up', 'first')
+          AND quantity > 0
+        ORDER BY available_date ASC
+        LIMIT 1
+      `;
+      params = [currentDate];
+    }
+
+    const results = await inventoryDb.raw(query, params);
+    const availableDate = results[0]?.available_date || null;
+
+    // Also get all available dates for context
+    const allDatesQuery = `
+      SELECT DISTINCT DATE(check_time) as available_date
+      FROM inventory_history 
+      WHERE change_type IN ('up', 'first')
+        AND quantity > 0
+      ORDER BY available_date DESC
+      LIMIT 30
+    `;
+    
+    const allDates = await inventoryDb.raw(allDatesQuery);
+
+    res.json({
+      success: true,
+      availableDate,
+      allAvailableDates: allDates.map(row => row.available_date),
+      direction,
+      currentDate
+    });
+
+  } catch (error) {
+    console.error('Error fetching available dates:', error);
+    res.status(500).json({ 
+      error: 'Failed to fetch available dates',
       details: error.message 
     });
   }

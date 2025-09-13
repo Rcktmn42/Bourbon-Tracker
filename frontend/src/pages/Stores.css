@@ -343,6 +343,23 @@
   gap: 8px;
 }
 
+.store-name-link {
+  background: none;
+  border: none;
+  color: #6a451f;
+  font-size: inherit;
+  font-weight: inherit;
+  font-family: inherit;
+  cursor: pointer;
+  padding: 0;
+  border-bottom: 1px solid transparent;
+  transition: border-bottom-color 0.2s;
+}
+
+.store-name-link:hover {
+  border-bottom-color: #6a451f;
+}
+
 .store-number {
   color: #666;
   font-weight: 400;
