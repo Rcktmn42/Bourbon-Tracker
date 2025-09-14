@@ -1022,6 +1022,128 @@ export async function getProductHistory(req, res) {
   }
 }
 
+// NEW: Get store inventory changes history (for Previous Drops section)
+export async function getStoreInventoryHistory(req, res) {
+  try {
+    const { storeId } = req.params;
+    const { days = 30 } = req.query;
+    
+    // Validate days parameter
+    const validDays = [30, 60, 90];
+    const daysPeriod = validDays.includes(parseInt(days)) ? parseInt(days) : 30;
+    
+    // Calculate date range
+    const endDate = new Date();
+    const startDate = new Date();
+    startDate.setDate(startDate.getDate() - daysPeriod);
+    
+    const startDateStr = startDate.toISOString().split('T')[0];
+    const endDateStr = endDate.toISOString().split('T')[0];
+    
+    console.log(`Fetching store ${storeId} inventory changes for ${daysPeriod} days (${startDateStr} to ${endDateStr})`);
+    
+    const query = `
+      SELECT 
+        ih.history_id,
+        ih.plu,
+        ih.quantity,
+        ih.change_type,
+        ih.delta,
+        DATE(ih.check_time) as change_date,
+        ih.check_time,
+        COALESCE(b.name, a.brand_name, 'Unknown Product') as product_name,
+        a.retail_price,
+        a.Listing_Type,
+        a.image_path,
+        a.nc_code
+      FROM inventory_history ih
+      LEFT JOIN alcohol a ON ih.plu = a.nc_code
+      LEFT JOIN bourbons b ON ih.plu = b.plu
+      WHERE ih.store_id = ?
+        AND DATE(ih.check_time) BETWEEN ? AND ?
+        AND ih.change_type IN ('up', 'first')
+        AND ih.quantity > 0
+      ORDER BY 
+        DATE(ih.check_time) DESC,
+        product_name ASC
+    `;
+    
+    const changes = await inventoryDb.raw(query, [parseInt(storeId), startDateStr, endDateStr]);
+    
+    // Group changes by date
+    const groupedChanges = changes.reduce((groups, change) => {
+      const date = change.change_date;
+      if (!groups[date]) {
+        groups[date] = [];
+      }
+      groups[date].push({
+        history_id: change.history_id,
+        plu: change.plu,
+        nc_code: change.nc_code,
+        product_name: change.product_name,
+        quantity: change.quantity,
+        change_type: change.change_type,
+        delta: change.delta,
+        check_time: change.check_time,
+        retail_price: change.retail_price,
+        listing_type: change.Listing_Type,
+        image_path: change.image_path,
+        image_url: getImagePath(change.image_path),
+        has_image: !!(change.image_path && change.image_path !== 'no image available')
+      });
+      return groups;
+    }, {});
+    
+    // Convert to array format with metadata
+    const formattedData = Object.entries(groupedChanges).map(([date, items]) => {
+      const dateObj = new Date(date + 'T00:00:00');
+      const dayOfWeek = dateObj.toLocaleDateString('en-US', { weekday: 'long' });
+      
+      return {
+        date,
+        day_of_week: dayOfWeek,
+        formatted_date: dateObj.toLocaleDateString('en-US', { 
+          month: 'short', 
+          day: 'numeric',
+          year: 'numeric'
+        }),
+        item_count: items.length,
+        items: items.sort((a, b) => a.product_name.localeCompare(b.product_name))
+      };
+    });
+    
+    // Calculate summary statistics
+    const totalChanges = changes.length;
+    const uniqueProducts = [...new Set(changes.map(c => c.plu))].length;
+    const totalInventoryAdded = changes.reduce((sum, c) => sum + (c.delta || 0), 0);
+    
+    res.json({
+      success: true,
+      storeId: parseInt(storeId),
+      daysPeriod,
+      dateRange: {
+        start: startDateStr,
+        end: endDateStr
+      },
+      summary: {
+        totalChanges,
+        uniqueProducts,
+        totalInventoryAdded,
+        daysWithChanges: formattedData.length
+      },
+      changes: formattedData
+    });
+    
+  } catch (error) {
+    console.error('Error in getStoreInventoryHistory:', error);
+    res.status(500).json({ 
+      success: false, 
+      error: 'Failed to fetch store inventory history',
+      details: error.message 
+    });
+  }
+}
+
 // Helper functions for date calculations
 function getWeekRange(weeksBack = 0) {
   // Always compute calendar dates in America/New_York

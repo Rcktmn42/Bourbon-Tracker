@@ -1,9 +1,12 @@
 // frontend/src/pages/StatewideShipments.jsx
 import React, { useState, useEffect, useMemo } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import './StatewideShipments.css';
 
 const StatewideShipments = () => {
+  const location = useLocation();
+  const navigate = useNavigate();
   const { user } = useAuth();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -24,9 +27,37 @@ const StatewideShipments = () => {
   });
   const [searchInput, setSearchInput] = useState('');
 
+  // Handle URL parameters on component mount
   useEffect(() => {
-    fetchInitialData();
-  }, []);
+    const initializePage = async () => {
+      const params = new URLSearchParams(location.search);
+      const searchParam = params.get('search');
+      
+      // First fetch initial data (boards and products)
+      await fetchInitialData();
+      
+      // Then apply search if provided
+      if (searchParam) {
+        setSearchInput(searchParam);
+        setFilters(prev => ({
+          ...prev,
+          searchTerm: searchParam
+        }));
+      }
+    };
+    
+    initializePage();
+  }, [location.search]);
+
+  // Back navigation function
+  const handleGoBack = () => {
+    if (window.history.length > 1) {
+      navigate(-1);
+    } else {
+      // Fallback to warehouse inventory if no history
+      navigate('/warehouse-inventory');
+    }
+  };
 
   useEffect(() => {
     fetchShipments();
@@ -306,6 +337,13 @@ const StatewideShipments = () => {
   return (
     <div className="shipments-page">
       <div className="shipments-container">
+        {/* Back Navigation - Top */}
+        <div className="back-navigation top">
+          <button onClick={handleGoBack} className="back-button">
+            ← Back
+          </button>
+        </div>
+
         {/* Header */}
         <div className="shipments-header">
           <h1>State Shipping Information</h1>
@@ -461,6 +499,13 @@ const StatewideShipments = () => {
               </div>
             )}
           </div>
+        </div>
+
+        {/* Back Navigation - Bottom */}
+        <div className="back-navigation bottom">
+          <button onClick={handleGoBack} className="back-button">
+            ← Back
+          </button>
         </div>
       </div>
     </div>

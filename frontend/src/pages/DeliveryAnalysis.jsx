@@ -1,6 +1,7 @@
 // frontend/src/pages/DeliveryAnalysis.jsx
 
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import './DeliveryAnalysis.css';
 
@@ -8,6 +9,7 @@ const CACHE_KEY = 'delivery-analysis-cache';
 const CACHE_DURATION = 30 * 60 * 1000; // 30 minutes in milliseconds
 
 const DeliveryAnalysis = () => {
+    const navigate = useNavigate();
     const { user } = useAuth();
     const [searchTerm, setSearchTerm] = useState('');
     const [searchResults, setSearchResults] = useState([]);
@@ -425,7 +427,13 @@ const DeliveryAnalysis = () => {
                                                                     <div key={delivery.history_id} className={`store-item ${delivery.mixed_beverage ? 'mixed' : ''}`}>
                                                                         <div className="store-info">
                                                                             <div className="store-name">
-                                                                                {delivery.nickname} (#{delivery.store_number})
+                                                                                <button 
+                                                                                    className="store-name-link"
+                                                                                    onClick={() => navigate(`/stores/${delivery.store_id}`)}
+                                                                                    title={`View ${delivery.nickname} store details`}
+                                                                                >
+                                                                                    {delivery.nickname} (#{delivery.store_number})
+                                                                                </button>
                                                                                 {delivery.mixed_beverage ? <span className="mixed-badge">MB</span> : null}
                                                                             </div>
                                                                             <div className="store-details">
@@ -474,7 +482,13 @@ const DeliveryAnalysis = () => {
                                                 <div key={store.store_id} className={`store-item other-drop ${store.mixed_beverage ? 'mixed' : ''}`}>
                                                     <div className="store-info">
                                                         <div className="store-name">
-                                                            {store.nickname} (#{store.store_number})
+                                                            <button 
+                                                                className="store-name-link"
+                                                                onClick={() => navigate(`/stores/${store.store_id}`)}
+                                                                title={`View ${store.nickname} store details`}
+                                                            >
+                                                                {store.nickname} (#{store.store_number})
+                                                            </button>
                                                             {store.mixed_beverage ? <span className="mixed-badge">MB</span> : null}
                                                         </div>
                                                         <div className="store-details">

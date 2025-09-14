@@ -298,6 +298,17 @@
   transform: translateY(-1px);
 }
 
+.mobile-product-card.clickable {
+  cursor: pointer;
+}
+
+.mobile-product-card.clickable:hover {
+  background: rgba(255, 255, 255, 1);
+  box-shadow: 0 6px 16px rgba(106, 69, 31, 0.15);
+  border-color: #8b4513;
+  transform: translateY(-2px);
+}
+
 /* Left: Product Image column */
 .mobile-image-section {
   padding: 8px;

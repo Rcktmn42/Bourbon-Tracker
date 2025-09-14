@@ -388,6 +388,23 @@
     margin-bottom: 2px;
 }
 
+.store-name-link {
+    background: none;
+    border: none;
+    padding: 0;
+    font-weight: 600;
+    font-size: inherit;
+    color: #8b4513;
+    cursor: pointer;
+    text-decoration: underline;
+    transition: color 0.2s ease;
+}
+
+.store-name-link:hover {
+    color: #a0522d;
+    text-decoration: none;
+}
+
 .store-details {
     font-size: 0.85em;
     color: #6b5a4a;

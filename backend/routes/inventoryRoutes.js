@@ -13,7 +13,8 @@ import {
     getStoresWithoutDeliveries,
     getWarehouseInventory,
     debugDataSync,
-    getAvailableDates
+    getAvailableDates,
+    getStoreInventoryHistory
 } from '../controllers/inventoryController.js';
 
 const router = express.Router();
@@ -36,6 +37,9 @@ router.get('/warehouse-inventory', getWarehouseInventory);
 
 // Debug route for data sync investigation
 router.get('/debug-data-sync', debugDataSync);
+
+// Store inventory history route
+router.get('/store-history/:storeId', getStoreInventoryHistory);
 
 // Future routes for other reports:
 // router.get('/shipments', getShipments);  

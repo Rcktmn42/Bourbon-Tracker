@@ -76,7 +76,38 @@ export default function TodaysArrivals() {
   const navigateToDate = async (direction) => {
     try {
       setNavigationLoading(true);
+      const today = new Date().toLocaleDateString('en-CA');
       
+      // Special handling for navigating "next" when we might want to go to today
+      if (direction === 'next') {
+        // If current date is before today, offer to go to today even if today has no data
+        const currentDateObj = new Date(currentDate + 'T00:00:00');
+        const todayObj = new Date(today + 'T00:00:00');
+        
+        if (currentDateObj < todayObj) {
+          // Check if there's a date with data between current and today
+          const response = await fetch(`/api/inventory/available-dates?currentDate=${currentDate}&direction=${direction}`, {
+            credentials: 'include'
+          });
+
+          if (!response.ok) {
+            throw new Error(`HTTP ${response.status}`);
+          }
+
+          const data = await response.json();
+          
+          if (data.availableDate) {
+            setCurrentDate(data.availableDate);
+          } else {
+            // No dates with data found, but offer to go to today anyway
+            setCurrentDate(today);
+            setError(''); // Clear any existing errors
+          }
+          return;
+        }
+      }
+      
+      // Regular navigation for all other cases
       const response = await fetch(`/api/inventory/available-dates?currentDate=${currentDate}&direction=${direction}`, {
         credentials: 'include'
       });
@@ -88,8 +119,13 @@ export default function TodaysArrivals() {
       const data = await response.json();
       if (data.availableDate) {
         setCurrentDate(data.availableDate);
+        setError(''); // Clear any existing errors
       } else {
-        setError(`No ${direction === 'previous' ? 'earlier' : 'later'} dates with arrivals found.`);
+        if (direction === 'next') {
+          setError(`No later dates with arrivals found. You're viewing the most recent data available.`);
+        } else {
+          setError(`No earlier dates with arrivals found.`);
+        }
       }
 
     } catch (err) {
@@ -155,7 +191,7 @@ export default function TodaysArrivals() {
     <div className="arrivals-page">
       <div className="arrivals-container">
         <div className="arrivals-header">
-          <h1>Bourbon Arrivals</h1>
+          <h1>Today's Arrivals</h1>
           
           <div className="date-navigation">
             <button 
@@ -173,13 +209,15 @@ export default function TodaysArrivals() {
               </span>
             </div>
             
-            <button 
-              onClick={() => navigateToDate('next')} 
-              disabled={navigationLoading || currentDate === new Date().toLocaleDateString('en-CA')}
-              className="nav-button next-button"
-            >
-              Next Day →
-            </button>
+            {currentDate !== new Date().toLocaleDateString('en-CA') && (
+              <button 
+                onClick={() => navigateToDate('next')} 
+                disabled={navigationLoading}
+                className="nav-button next-button"
+              >
+                Next Day →
+              </button>
+            )}
           </div>
 
           {summary && (

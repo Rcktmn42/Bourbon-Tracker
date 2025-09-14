@@ -12,6 +12,9 @@
 *.db-shm
 *.db-wal
 
+# Specific user database (contains sensitive user data)
+backend/data/database.sqlite3
+
 # Node.js dependencies
 node_modules/
 npm-debug.log*
@@ -165,6 +168,13 @@ development/
 # Upload directories (if you have file uploads)
 uploads/
 public/uploads/
+
+# Product images directory and subdirectories
+Images/
+Images/alcohol_images/
+alcohol_images/
+backend/Images/
+backend/Images/alcohol_images/
 
 # Email templates backup (if you make backups)
 templates/*.backup

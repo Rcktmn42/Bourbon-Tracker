@@ -12,6 +12,36 @@
   padding: 0 20px;
 }
 
+/* Back Navigation */
+.back-navigation {
+  margin-bottom: 20px;
+}
+
+.back-navigation.bottom {
+  margin-top: 30px;
+  margin-bottom: 0;
+}
+
+.back-button {
+  background: #6a451f;
+  color: white;
+  border: none;
+  padding: 10px 16px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  transition: all 0.2s;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.back-button:hover {
+  background: #8b5a2b;
+  transform: translateX(-2px);
+}
+
 /* Header */
 .shipments-header {
   text-align: center;

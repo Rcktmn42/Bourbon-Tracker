@@ -1,5 +1,6 @@
 // frontend/src/pages/WarehouseInventory.jsx
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import './WarehouseInventory.css';
 
@@ -7,6 +8,7 @@ const CACHE_KEY = 'warehouse-inventory-cache';
 const CACHE_DURATION = 4 * 60 * 60 * 1000; // 4 hours in milliseconds
 
 const WarehouseInventory = () => {
+  const navigate = useNavigate();
   const { user } = useAuth();
   const [rawInventoryData, setRawInventoryData] = useState({});
   const [loading, setLoading] = useState(false);
@@ -149,6 +151,12 @@ const WarehouseInventory = () => {
     });
     setSearchTerm('');
   }, []);
+
+  const handleProductClick = useCallback((product) => {
+    // Navigate to StatewideShipments with the product name pre-filled
+    const productName = product.product_name || product.name || 'Unknown Product';
+    navigate(`/statewide-shipments?search=${encodeURIComponent(productName)}`);
+  }, [navigate]);
 
   const filteredInventory = useMemo(() => {
     const currentData = rawInventoryData[filterSettings.timePeriod];
@@ -424,7 +432,12 @@ const WarehouseInventory = () => {
             ) : (
               <div className="mobile-card-layout">
                 {filteredInventory.map((product) => (
-                  <div key={product.plu} className="mobile-product-card">
+                  <div 
+                    key={product.plu} 
+                    className="mobile-product-card clickable"
+                    onClick={() => handleProductClick(product)}
+                    title={`View shipments for ${product.product_name || 'this product'}`}
+                  >
                     {/* Left: Image */}
                     <div className="mobile-image-section">
                       <ProductImage product={product} />
