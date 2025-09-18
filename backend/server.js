@@ -20,6 +20,7 @@ import stateRoutes from './routes/stateRoutes.js';
 
 // Middleware
 import { authenticate } from './middleware/authMiddleware.js';
+import { validateCSRFToken, skipRateLimitForInternal } from './middleware/validationMiddleware.js';
 
 // Config
 dotenv.config();
@@ -27,42 +28,104 @@ dotenv.config();
 // Initialize database with safety measures
 import databaseManager from './config/databaseSafety.js';
 
-const requiredEnvVars = ['JWT_SECRET', 'EMAIL_USER', 'EMAIL_PASS'];
-requiredEnvVars.forEach(envVar => {
-  if (!process.env[envVar]) {
-    console.error(`Missing required environment variable: ${envVar}`);
-    process.exit(1);
-  }
-});
-
-const app = express();
+// Get __dirname for ES modules
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
+// Enhanced environment variable validation
+const requiredEnvVars = [
+  'JWT_SECRET',
+  'EMAIL_USER', 
+  'EMAIL_PASS',
+  'EMAIL_FROM_NAME'
+];
+
+const optionalWithDefaults = {
+  'NODE_ENV': 'development',
+  'PORT': '3000',
+  'FRONTEND_URL': 'http://localhost:5173',
+  'DB_CLIENT': 'sqlite3',
+  'IMAGES_DIR': null, // Will be set based on environment
+  'LOG_LEVEL': 'info'
+};
+
+// Validate required environment variables
+const missingVars = requiredEnvVars.filter(envVar => !process.env[envVar]);
+if (missingVars.length > 0) {
+  console.error('❌ Missing required environment variables:');
+  missingVars.forEach(envVar => console.error(`   - ${envVar}`));
+  console.error('\n💡 Copy .env.example to .env and fill in the values');
+  process.exit(1);
+}
+
+// Set defaults for optional variables
+Object.entries(optionalWithDefaults).forEach(([key, defaultValue]) => {
+  if (!process.env[key] && defaultValue !== null) {
+    process.env[key] = defaultValue;
+  }
+});
+
+// Environment-specific path configurations
 const isProduction = process.env.NODE_ENV === 'production';
+const imagesPath = process.env.IMAGES_DIR || (isProduction 
+  ? '/opt/Images/alcohol_images' 
+  : join(__dirname, '../BourbonDatabase/alcohol_images')
+);
+
+const app = express();
+
+console.log(`🚀 Starting NC Bourbon Tracker [${isProduction ? 'PRODUCTION' : 'DEVELOPMENT'}]`);
+console.log(`📊 Database client: ${process.env.DB_CLIENT}`);
+console.log(`🖼️  Images directory: ${imagesPath}`);
+console.log(`🌐 Frontend URL: ${process.env.FRONTEND_URL}`);
 
 // Trust proxy in production (nginx reverse proxy)
 if (isProduction) {
   app.set('trust proxy', 'loopback');
 }
 
-// Enhanced Security Headers
-app.use(helmet({
+// CSP Nonce middleware for production security
+app.use((req, res, next) => {
+  if (isProduction) {
+    res.locals.cspNonce = require('crypto').randomBytes(16).toString('base64');
+  }
+  next();
+});
+
+// Enhanced Security Headers with environment-specific CSP
+const helmetConfig = {
   contentSecurityPolicy: {
+    useDefaults: true,
     directives: {
-      defaultSrc: ["'self'"],
-      scriptSrc: ["'self'", "'unsafe-inline'"], // Vite dev needs unsafe-inline
-      styleSrc: ["'self'", "'unsafe-inline'"],
-      imgSrc: ["'self'", "data:", "https:"],
-      connectSrc: ["'self'"],
-      fontSrc: ["'self'"],
-      objectSrc: ["'none'"],
-      mediaSrc: ["'self'"],
-      frameSrc: ["'none'"],
-    },
+      "default-src": ["'self'"],
+      "script-src": isProduction 
+        ? ["'self'", (req, res) => `'nonce-${res.locals.cspNonce}'`]
+        : ["'self'", "'unsafe-inline'"], // Allow unsafe-inline in development for Vite
+      "style-src": ["'self'", "'unsafe-inline'"], // CSS needs unsafe-inline for now
+      "img-src": ["'self'", "data:", "https:"],
+      "connect-src": ["'self'"],
+      "font-src": ["'self'"],
+      "object-src": ["'none'"],
+      "base-uri": ["'none'"],
+      "frame-ancestors": ["'none'"]
+    }
   },
-  crossOriginEmbedderPolicy: false, // Needed for development
-}));
+  crossOriginEmbedderPolicy: false,
+  // Additional security headers
+  referrerPolicy: { policy: "origin-when-cross-origin" },
+  permissionsPolicy: {
+    features: {
+      geolocation: [],
+      camera: [],
+      microphone: [],
+      payment: [],
+      usb: [],
+      bluetooth: []
+    }
+  }
+};
+
+app.use(helmet(helmetConfig));
 
 // Enable compression for all responses
 app.use(compression({
@@ -80,17 +143,60 @@ app.use(compression({
 app.use(express.json({ limit: '10mb' })); // Increased for potential report uploads
 app.use(cookieParser());
 
-// Enhanced CORS config
+// Security middleware
+app.use(skipRateLimitForInternal); // Allow internal services to bypass rate limits
+app.use(validateCSRFToken); // CSRF protection for write operations
+
+// CORS Allowlist for production security
+const allowedOrigins = new Set([
+  process.env.FRONTEND_URL,
+  "https://wakepour.com",
+  "https://www.wakepour.com",
+  // Development origins
+  ...(isProduction ? [] : [
+    "http://localhost:5173",
+    "http://localhost:3000",
+    "http://127.0.0.1:5173"
+  ])
+].filter(Boolean));
+
+console.log('🌐 CORS allowlist:', Array.from(allowedOrigins));
+
 app.use(cors({
-  origin: process.env.FRONTEND_URL || (isProduction ? 'https://wakepour.com' : 'http://localhost:5173'),
+  origin: (origin, callback) => {
+    // Allow requests with no origin (mobile apps, Postman, curl)
+    if (!origin) return callback(null, true);
+    
+    if (allowedOrigins.has(origin)) {
+      return callback(null, true);
+    } else {
+      console.warn(`🚫 CORS blocked request from: ${origin}`);
+      return callback(new Error('CORS policy violation'), false);
+    }
+  },
   credentials: true,
-  optionsSuccessStatus: 200
+  optionsSuccessStatus: 200,
+  maxAge: 86400 // Cache preflight for 24 hours
 }));
 
-// Enhanced Rate Limiting - More lenient in production since nginx handles primary rate limiting
+// Enhanced Rate Limiting with environment configuration
+// Note: These are conservative backup limits since nginx handles primary rate limiting in production
+const rateLimitConfig = {
+  windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS) || (15 * 60 * 1000), // 15 minutes
+  maxRequests: parseInt(process.env.RATE_LIMIT_MAX_REQUESTS) || (isProduction ? 100 : 1000),
+  authMaxRequests: parseInt(process.env.AUTH_RATE_LIMIT_MAX) || (isProduction ? 10 : 25)
+};
+
+console.log('🛡️  Rate limiting config:', {
+  window: `${rateLimitConfig.windowMs / 1000 / 60}min`,
+  general: `${rateLimitConfig.maxRequests} requests`,
+  auth: `${rateLimitConfig.authMaxRequests} auth attempts`,
+  note: isProduction ? 'Backup limits (nginx primary)' : 'Development limits'
+});
+
 const generalLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: isProduction ? 500 : 5000, // Higher in production since nginx pre-filters
+  windowMs: rateLimitConfig.windowMs,
+  max: rateLimitConfig.maxRequests,
   standardHeaders: true,
   legacyHeaders: false,
   message: { error: 'Too many requests, please try again later.' },
@@ -101,16 +207,16 @@ const generalLimiter = rateLimit({
 });
 
 const authLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: isProduction ? 20 : 50, // Nginx handles primary auth limiting
+  windowMs: rateLimitConfig.windowMs,
+  max: rateLimitConfig.authMaxRequests,
   message: { error: 'Too many authentication attempts, please try again later.' },
   standardHeaders: true,
   legacyHeaders: false
 });
 
 const registrationLimiter = rateLimit({
-  windowMs: 60 * 60 * 1000, // 1 hour
-  max: 5, // Slightly higher since nginx pre-filters
+  windowMs: 60 * 60 * 1000, // 1 hour window
+  max: 3, // Very conservative for registrations
   message: { error: 'Too many registration attempts, please try again later.' },
   standardHeaders: true,
   legacyHeaders: false
@@ -140,12 +246,6 @@ app.use('/api/auth/resend-verification', authLimiter);
 
 // Static file serving for product images
 // In production, nginx serves images directly, but keep this as fallback/development
-const imagesPath = isProduction 
-  ? '/opt/alcohol_images'
-  : join(__dirname, '../BourbonDatabase/alcohol_images');
-
-console.log(`[${isProduction ? 'PRODUCTION' : 'DEVELOPMENT'}] Image serving:`, imagesPath);
-
 if (isProduction) {
   console.log('⚠️  Note: In production, nginx serves images directly for better performance');
   console.log('   Node.js image serving acts as fallback only');

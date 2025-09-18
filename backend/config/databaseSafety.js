@@ -45,11 +45,11 @@ class DatabaseManager {
     ];
   }
 
-  // Enhanced connection configuration with safety measures
-  createDatabaseConfig(dbPath, poolConfig = {}) {
+  // SQLite-specific connection configuration with safety measures
+  createSqliteConfig(dbPath, poolConfig = {}) {
     const defaultPoolConfig = {
-      min: 2,                    // Minimum connections
-      max: 10,                   // Maximum connections  
+      min: 1,                    // Minimum connections (conservative for SQLite)
+      max: 4,                    // Maximum connections (SQLite-friendly)  
       acquireTimeoutMillis: 30000,   // Wait time to get connection
       createTimeoutMillis: 30000,    // Time to create new connection
       destroyTimeoutMillis: 5000,    // Time to destroy connection
@@ -102,6 +102,28 @@ class DatabaseManager {
     };
   }
 
+  // PostgreSQL connection configuration
+  createPostgresConfig(url, poolConfig = {}) {
+    const defaultPoolConfig = {
+      min: 2,                    // Minimum connections
+      max: 10,                   // Maximum connections
+      acquireTimeoutMillis: 30000,
+      createTimeoutMillis: 30000,
+      destroyTimeoutMillis: 5000,
+      idleTimeoutMillis: 300000,
+      reapIntervalMillis: 1000,
+      createRetryIntervalMillis: 200,
+      propagateCreateError: false
+    };
+
+    return {
+      client: 'pg',
+      connection: url,
+      pool: { ...defaultPoolConfig, ...poolConfig },
+      acquireConnectionTimeout: 30000
+    };
+  }
+
   // Initialize both database connections with safety measures
   async initialize() {
     if (this.initialized) {
@@ -112,23 +134,43 @@ class DatabaseManager {
     try {
       console.log('🔧 Initializing secure database connections...');
 
+      // Database client configuration
+      const dbClient = process.env.DB_CLIENT || 'sqlite3';
+      const databaseUrl = process.env.DATABASE_URL;
+      const inventoryDatabaseUrl = process.env.INVENTORY_DATABASE_URL;
+
+      console.log(`📊 Using database client: ${dbClient}`);
+
       // User Database Configuration
-      const userDbPath = path.join(__dirname, '..', 'data', 'database.sqlite3');
-      const userDbConfig = this.createDatabaseConfig(userDbPath, {
-        // User DB typically has fewer concurrent operations
-        max: 5
-      });
+      let userDbConfig;
+      if (dbClient === 'pg') {
+        if (!databaseUrl) {
+          throw new Error('DATABASE_URL is required when using PostgreSQL');
+        }
+        userDbConfig = this.createPostgresConfig(databaseUrl, { max: 5 });
+        console.log('🐘 User database: PostgreSQL');
+      } else {
+        const userDbPath = databaseUrl || path.join(__dirname, '..', 'data', 'database.sqlite3');
+        userDbConfig = this.createSqliteConfig(userDbPath, { max: 3 });
+        console.log(`📁 User database: SQLite at ${userDbPath}`);
+      }
 
       // Inventory Database Configuration  
-      const inventoryDbPath = process.env.NODE_ENV === 'production' 
-        ? '/opt/BourbonDatabase/inventory.db'
-        : path.join(__dirname, '..', '..', 'BourbonDatabase', 'inventory.db');
-        
-      const inventoryDbConfig = this.createDatabaseConfig(inventoryDbPath, {
-        // Inventory DB needs more connections for concurrent reads/writes
-        max: 15,
-        min: 3
-      });
+      let inventoryDbConfig;
+      if (dbClient === 'pg') {
+        const invDbUrl = inventoryDatabaseUrl || databaseUrl;
+        if (!invDbUrl) {
+          throw new Error('INVENTORY_DATABASE_URL or DATABASE_URL required for PostgreSQL');
+        }
+        inventoryDbConfig = this.createPostgresConfig(invDbUrl, { max: 10 });
+        console.log('🐘 Inventory database: PostgreSQL');
+      } else {
+        const inventoryDbPath = inventoryDatabaseUrl || (process.env.NODE_ENV === 'production' 
+          ? '/opt/BourbonDatabase/inventory.db'
+          : path.join(__dirname, '..', '..', 'BourbonDatabase', 'inventory.db'));
+        inventoryDbConfig = this.createSqliteConfig(inventoryDbPath, { max: 4, min: 1 });
+        console.log(`📁 Inventory database: SQLite at ${inventoryDbPath}`);
+      }
 
       // Create connections
       this.userDb = knex(userDbConfig);

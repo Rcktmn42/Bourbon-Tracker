@@ -8,7 +8,12 @@ const __dirname = dirname(__filename);
 
 class Logger {
   constructor() {
-    this.logDir = '/opt/bourbon-tracker/backend/logs';
+    // Environment-aware log directory
+    const isProduction = process.env.NODE_ENV === 'production';
+    this.logDir = isProduction 
+      ? '/var/log/bourbon-tracker'  // Standard production log location
+      : join(__dirname, '..', 'logs'); // Development relative path
+    
     this.ensureLogDirectory();
   }
 

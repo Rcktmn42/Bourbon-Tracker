@@ -7,46 +7,30 @@ import {
   updateUserStatus,
   initiatePasswordReset
 } from '../controllers/adminController.js';
-import { authenticate } from '../middleware/authMiddleware.js';
+import { authenticate, requirePowerUser } from '../middleware/authMiddleware.js';
+import { validate, schemas } from '../middleware/validationMiddleware.js';
 
 const router = express.Router();
 
-// Only power_users or admins can see these routes
-router.use(authenticate);
+// Enhanced admin routes with proper authentication and validation
+router.use(authenticate); // First authenticate
+router.use(requirePowerUser); // Then check for admin/power_user role
 
-// DEBUG: Add temporary logging to see what's happening
-router.use((req, res, next) => {
-  console.log('🔍 Admin Route Debug:', {
-    hasUser: !!req.user,
-    userKeys: req.user ? Object.keys(req.user) : 'no user',
-    userId: req.user?.userId,
-    email: req.user?.email,
-    role: req.user?.role,
-    roleType: typeof req.user?.role,
-    roleComparison: {
-      isAdmin: req.user?.role === 'admin',
-      isPowerUser: req.user?.role === 'power_user',
-      actualRole: req.user?.role,
-      stringified: JSON.stringify(req.user?.role)
-    },
-    fullUser: req.user
-  });
-  
-  if (req.user?.role === 'power_user' || req.user?.role === 'admin') {
-    console.log('✅ Admin access granted for user:', req.user.email);
-    return next();
-  }
-  
-  console.log('❌ Admin access denied for user:', req.user?.email, 'with role:', req.user?.role);
-  return res.status(403).json({ 
-    error: 'Admin access required', 
-    currentRole: req.user?.role,
-    requiredRoles: ['admin', 'power_user']
-  });
-});
+// User management routes with input validation
 router.get('/users', listUsers);
-router.patch('/users/:userId/role', updateUserRole);
-router.patch('/users/:userId/status', updateUserStatus);
-router.post('/users/:userId/reset-password', initiatePasswordReset);
+router.patch('/users/:userId/role', 
+  validate(schemas.idParam, 'params'),
+  validate(schemas.updateUserRole, 'body'),
+  updateUserRole
+);
+router.patch('/users/:userId/status', 
+  validate(schemas.idParam, 'params'),
+  validate(schemas.updateUserStatus, 'body'),
+  updateUserStatus
+);
+router.post('/users/:userId/reset-password', 
+  validate(schemas.idParam, 'params'),
+  initiatePasswordReset
+);
 
 export default router;
