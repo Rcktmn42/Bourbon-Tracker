@@ -68,7 +68,7 @@ Object.entries(optionalWithDefaults).forEach(([key, defaultValue]) => {
 // Environment-specific path configurations
 const isProduction = process.env.NODE_ENV === 'production';
 const imagesPath = process.env.IMAGES_DIR || (isProduction 
-  ? '/opt/Images/alcohol_images' 
+  ? '/opt/alcohol_images' 
   : join(__dirname, '../BourbonDatabase/alcohol_images')
 );
 

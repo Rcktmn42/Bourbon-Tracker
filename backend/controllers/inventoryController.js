@@ -1214,7 +1214,7 @@ const IMAGE_CONFIG = {
   },
   production: {
     // PRODUCTION CONFIG: Uncomment and modify for production deployment
-    // basePath: '/opt/Images/alcohol_images/',
+    // basePath: '/opt/alcohol_images/',
     // urlPrefix: '/images/',
     basePath: 'BourbonDatabase/alcohol_images/', // Using dev config for now
     urlPrefix: '/api/images/'

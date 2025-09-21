@@ -1,0 +1,381 @@
+/* frontend/src/pages/AdminUsers.css */
+
+.admin-users {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #f8f6f4 0%, #e8e6e4 100%);
+  padding: 20px 0;
+}
+
+.admin-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
+/* Header */
+.admin-header {
+  text-align: center;
+  margin-bottom: 30px;
+  background: white;
+  border-radius: 12px;
+  padding: 30px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.admin-header h1 {
+  color: #6a451f;
+  margin-bottom: 10px;
+  font-size: 2.5rem;
+  font-weight: 700;
+}
+
+.admin-header p {
+  color: #666;
+  font-size: 1.1rem;
+  margin-bottom: 20px;
+}
+
+.admin-stats {
+  display: flex;
+  justify-content: center;
+  gap: 30px;
+  flex-wrap: wrap;
+}
+
+.admin-stats .stat {
+  color: #6a451f;
+  font-size: 16px;
+}
+
+.admin-stats .stat strong {
+  font-weight: 700;
+  font-size: 18px;
+}
+
+/* Loading and Error States */
+.loading-state,
+.error-state {
+  text-align: center;
+  padding: 60px 20px;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.loading-spinner {
+  width: 40px;
+  height: 40px;
+  border: 4px solid #f3f3f3;
+  border-top: 4px solid #6a451f;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin: 0 auto 20px;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.error-state h2 {
+  color: #d32f2f;
+  margin-bottom: 15px;
+}
+
+.error-state p {
+  color: #666;
+  margin-bottom: 20px;
+}
+
+.retry-button {
+  background: #6a451f;
+  color: white;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: background-color 0.2s;
+}
+
+.retry-button:hover {
+  background: #8b5a2b;
+}
+
+/* Users Table */
+.users-table-container {
+  background: white;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.users-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.users-table thead {
+  background: linear-gradient(135deg, #6a451f 0%, #8b5a2b 100%);
+  color: white;
+}
+
+.users-table th {
+  padding: 16px 12px;
+  text-align: left;
+  font-weight: 600;
+  font-size: 14px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.users-table td {
+  padding: 16px 12px;
+  border-bottom: 1px solid #e0e0e0;
+  vertical-align: middle;
+}
+
+.users-table tbody tr:hover {
+  background: #f9f9f9;
+}
+
+.users-table tbody tr.updating {
+  background: #f0f8ff;
+  opacity: 0.7;
+}
+
+/* User Info */
+.user-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.user-id {
+  font-size: 12px;
+  color: #666;
+  font-weight: 500;
+}
+
+.user-email {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.verification-badge {
+  font-size: 11px;
+  background: #fff3cd;
+  color: #856404;
+  padding: 2px 6px;
+  border-radius: 3px;
+  border: 1px solid #ffeaa7;
+  align-self: flex-start;
+}
+
+/* Role Select */
+.role-select {
+  padding: 6px 8px;
+  border: 2px solid #e0e0e0;
+  border-radius: 4px;
+  font-size: 13px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.role-select:focus {
+  outline: none;
+  border-color: #6a451f;
+}
+
+.role-select.role-admin {
+  background: #ffebee;
+  color: #c62828;
+  border-color: #ffcdd2;
+}
+
+.role-select.role-power-user {
+  background: #fff3e0;
+  color: #f57c00;
+  border-color: #ffcc02;
+}
+
+.role-select.role-user {
+  background: #e8f5e8;
+  color: #2e7d32;
+  border-color: #a5d6a7;
+}
+
+.role-select.role-unknown {
+  background: #f5f5f5;
+  color: #666;
+  border-color: #ddd;
+}
+
+/* Status Badges */
+.status-badge {
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border: 1px solid;
+}
+
+.status-badge.status-active {
+  background: #e8f5e8;
+  color: #2e7d32;
+  border-color: #4caf50;
+}
+
+.status-badge.status-inactive {
+  background: #ffebee;
+  color: #c62828;
+  border-color: #f44336;
+}
+
+.status-badge.status-unverified {
+  background: #fff3cd;
+  color: #856404;
+  border-color: #ffc107;
+}
+
+/* Date Info */
+.date-info {
+  font-size: 13px;
+  color: #666;
+}
+
+/* User Actions */
+.user-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.status-toggle {
+  padding: 6px 12px;
+  border: none;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.status-toggle.activate {
+  background: #e8f5e8;
+  color: #2e7d32;
+  border: 1px solid #4caf50;
+}
+
+.status-toggle.activate:hover {
+  background: #4caf50;
+  color: white;
+}
+
+.status-toggle.deactivate {
+  background: #ffebee;
+  color: #c62828;
+  border: 1px solid #f44336;
+}
+
+.status-toggle.deactivate:hover {
+  background: #f44336;
+  color: white;
+}
+
+.status-toggle:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Empty State */
+.empty-state {
+  text-align: center;
+  padding: 60px 20px;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  margin-top: 20px;
+}
+
+.empty-state p {
+  color: #666;
+  font-size: 1.1rem;
+  font-style: italic;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .admin-container {
+    padding: 0 10px;
+  }
+
+  .admin-header {
+    padding: 20px;
+  }
+
+  .admin-header h1 {
+    font-size: 2rem;
+  }
+
+  .admin-stats {
+    flex-direction: column;
+    gap: 15px;
+  }
+
+  .users-table-container {
+    overflow-x: auto;
+  }
+
+  .users-table {
+    min-width: 800px;
+  }
+
+  .users-table th,
+  .users-table td {
+    padding: 12px 8px;
+    font-size: 13px;
+  }
+
+  .role-select {
+    font-size: 12px;
+    padding: 4px 6px;
+  }
+
+  .status-toggle {
+    font-size: 11px;
+    padding: 4px 8px;
+  }
+}
+
+@media (max-width: 480px) {
+  .admin-header {
+    padding: 15px;
+  }
+
+  .admin-header h1 {
+    font-size: 1.8rem;
+  }
+
+  .users-table th,
+  .users-table td {
+    padding: 10px 6px;
+    font-size: 12px;
+  }
+
+  .user-actions {
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .status-toggle {
+    width: 100%;
+    text-align: center;
+  }
+}

@@ -14,7 +14,11 @@
       "Bash(chmod:*)",
       "Bash(DEV_MODE=true python3 warehouse_inventory_generator.py current_month)",
       "Bash(python3:*)",
-      "Bash(DEV_MODE=true python3 warehouse_inventory_generator.py)"
+      "Bash(DEV_MODE=true python3 warehouse_inventory_generator.py)",
+      "Bash(git commit:*)",
+      "Bash(git checkout:*)",
+      "Bash(timeout:*)",
+      "Bash(find:*)"
     ],
     "deny": [],
     "ask": []
