@@ -230,9 +230,9 @@
   min-width: 60px;
 }
 
-.listing-type-badge.allocation { background: #8B4513; color: white; }
-.listing-type-badge.limited   { background: #A0522D; color: white; }
-.listing-type-badge.barrel    { background: #654321; color: white; }
+.listing-type-badge.allocation { background: #efc451; color: white; }
+.listing-type-badge.limited   { background: #462c1b; color: white; }
+.listing-type-badge.barrel    { background: #6b787d; color: white; }
 .listing-type-badge.listed    { background: #8B7355; color: white; }
 .listing-type-badge.unknown   { background: #D2B48C; color: #5A3E1B; }
 

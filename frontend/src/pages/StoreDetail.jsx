@@ -4,52 +4,60 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import './StoreDetail.css';
 
+const sanitizeImagePath = (imagePath) => {
+  if (!imagePath) {
+    return null;
+  }
+
+  return imagePath
+    .replace(/\\/g, '/')
+    .replace(/^alcohol_images\//i, '')
+    .replace(/^\//, '');
+};
+
 const ProductImage = React.memo(({ product }) => {
-  const [imageError, setImageError] = useState(false);
-  const [imageLoading, setImageLoading] = useState(true);
-  const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [imageFailed, setImageFailed] = useState(false);
 
-  const getImageVariations = useCallback(() => {
-    if (!product.image_path || product.image_path === 'no image available') {
-      return [];
+  const imageSources = useMemo(() => {
+    const sources = [];
+
+    if (product?.image_url) {
+      sources.push(product.image_url);
     }
 
-    const variations = [
-      product.image_url,
-      `/api/images/${product.image_path}`,
-      `/api/images/${product.image_path.replace(/^alcohol_images[/\\]/, '')}`,
-      `/api/images/${product.image_path.replace(/^.*[/\\]/, '')}`,
-      `/api/images/${product.nc_code}.jpg`,
-      `/api/images/${product.nc_code}.png`,
-      `/api/images/${String(product.nc_code).padStart(5, '0')}.jpg`,
-      `/api/images/product_${product.nc_code}.jpg`
-    ];
+    if (product?.image_path) {
+      const normalized = sanitizeImagePath(product.image_path);
+      if (normalized) {
+        sources.push(`/api/images/${normalized}`);
+        sources.push(`/api/images/alcohol_images/${normalized}`);
+      }
+      const rawPath = product.image_path.replace(/^\//, '');
+      if (rawPath && rawPath !== normalized) {
+        sources.push(`/api/images/${rawPath}`);
+      }
+    }
 
-    return variations.filter(Boolean);
-  }, [product.image_path, product.image_url, product.nc_code]);
+    return Array.from(new Set(sources));
+  }, [product?.image_url, product?.image_path]);
 
-  const imageVariations = useMemo(() => getImageVariations(), [getImageVariations]);
+  useEffect(() => {
+    setCurrentIndex(0);
+    setImageFailed(false);
+  }, [imageSources]);
 
-  const handleImageError = useCallback(() => {
-    if (currentImageIndex < imageVariations.length - 1) {
-      setCurrentImageIndex(prev => prev + 1);
-      setImageError(false);
-      setImageLoading(true);
+  const handleImageError = () => {
+    if (currentIndex < imageSources.length - 1) {
+      setCurrentIndex(prev => prev + 1);
     } else {
-      setImageError(true);
-      setImageLoading(false);
+      setImageFailed(true);
     }
-  }, [currentImageIndex, imageVariations.length]);
+  };
 
-  const handleImageLoad = useCallback(() => {
-    setImageLoading(false);
-    setImageError(false);
-  }, []);
-
-  if (imageVariations.length === 0 || (imageError && currentImageIndex >= imageVariations.length - 1)) {
+  if (imageSources.length === 0 || imageFailed) {
     return (
       <div className="product-image-placeholder">
-        <span className="placeholder-icon">🥃</span>
+        🥃
       </div>
     );
   }
@@ -57,11 +65,10 @@ const ProductImage = React.memo(({ product }) => {
   return (
     <div className="product-image-container">
       <img
-        src={imageVariations[currentImageIndex]}
-        alt={`${product.brand_name} bottle`}
-        className={`product-image ${imageLoading ? 'loading' : ''}`}
+        src={imageSources[currentIndex]}
+        alt={product?.brand_name || 'Product image'}
+        className="product-image"
         onError={handleImageError}
-        onLoad={handleImageLoad}
       />
     </div>
   );
@@ -69,38 +76,54 @@ const ProductImage = React.memo(({ product }) => {
 
 const StoreInventoryCard = ({ item }) => {
   return (
-    <div className="store-product-card">
+    <div className="mobile-product-card">
       {/* Left: Image */}
-      <div className="store-image-section">
+      <div className="mobile-image-section">
         <ProductImage product={item} />
       </div>
 
-      {/* Center: Product details (simplified from warehouse version) */}
-      <div className="store-content-section">
-        <div className="store-product-name">
-          {item.brand_name || item.product_name || 'Unknown Product'}
+      {/* Center: Top (2/3) with name + meta, Divider, Bottom (1/3) with bottles per case and size */}
+      <div className="mobile-content-section split-layout">
+        <div className="content-top">
+          <div className="mobile-product-name">
+            {item.brand_name || item.product_name || 'Unknown Product'}
+          </div>
+          <div className="mobile-meta-row">
+            <span
+              className={`listing-type-badge ${(item.Listing_Type || item.listing_type || 'unknown').toLowerCase()}`}
+              title={item.Listing_Type || item.listing_type || 'N/A'}
+            >
+              {item.Listing_Type || item.listing_type || 'N/A'}
+            </span>
+            <span className="mobile-product-plu">
+              PLU: {item.nc_code || 'N/A'}
+            </span>
+            <span className="mobile-product-price">
+              {item.retail_price ? `$${item.retail_price}` : 'N/A'}
+            </span>
+          </div>
         </div>
-        <div className="store-meta-row">
-          <span
-            className={`listing-type-badge ${(item.Listing_Type || item.listing_type || 'unknown').toLowerCase()}`}
-            title={item.Listing_Type || item.listing_type || 'N/A'}
-          >
-            {item.Listing_Type || item.listing_type || 'N/A'}
-          </span>
-          <span className="store-product-price">
-            {item.retail_price ? `$${item.retail_price}` : 'N/A'}
-          </span>
-        </div>
-        <div className="store-plu-row">
-          <span className="store-plu-label">PLU:</span>
-          <span className="store-plu-value">{item.nc_code || 'N/A'}</span>
+
+        <div className="soft-divider" aria-hidden="true"></div>
+
+        <div className="content-bottom">
+          {item.bottles_per_case && (
+            <div className="mobile-bottles-per-case">
+              Bottles Per Case: {item.bottles_per_case}
+            </div>
+          )}
+          {item.size_ml && (
+            <div className="mobile-size-info">
+              Size: {item.size_ml}ml
+            </div>
+          )}
         </div>
       </div>
 
       {/* Right: Current inventory */}
-      <div className="store-current-section">
-        <div className="store-current-label">In Stock</div>
-        <div className="store-current-value">
+      <div className="mobile-current-section">
+        <div className="mobile-current-label">In Stock</div>
+        <div className="mobile-current-value">
           {item.quantity || 0}
         </div>
       </div>

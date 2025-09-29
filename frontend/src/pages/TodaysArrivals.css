@@ -258,21 +258,21 @@
 }
 
 .listing-badge.allocation {
-  background-color: #ffebee;
-  color: #d32f2f;
-  border: 1px solid #d32f2f;
+  background-color: #efc451;
+  color: white;
+  border: 1px solid #efc451;
 }
 
 .listing-badge.limited {
-  background-color: #fff3e0;
-  color: #ff9800;
-  border: 1px solid #ff9800;
+  background-color: #462c1b;
+  color: white;
+  border: 1px solid #462c1b;
 }
 
 .listing-badge.barrel {
-  background-color: #f3e5d0;
-  color: #8b5a2b;
-  border: 1px solid #8b5a2b;
+  background-color: #6b787d;
+  color: white;
+  border: 1px solid #6b787d;
 }
 
 .listing-badge.listed {
