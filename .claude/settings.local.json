@@ -18,7 +18,11 @@
       "Bash(git commit:*)",
       "Bash(git checkout:*)",
       "Bash(timeout:*)",
-      "Bash(find:*)"
+      "Bash(find:*)",
+      "Bash(npx knex migrate:status:*)",
+      "Bash(npx knex migrate:*)",
+      "Bash(npx knex raw:*)",
+      "Read(//mnt/c/Users/JTLew/source/repos/bourbon-scripts/**)"
     ],
     "deny": [],
     "ask": []

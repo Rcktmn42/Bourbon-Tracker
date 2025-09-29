@@ -17,6 +17,7 @@ import inventoryRoutes from './routes/inventoryRoutes.js';
 import reportRoutes from './routes/reportRoutes.js';
 import storesRoutes from './routes/storesRoutes.js';
 import stateRoutes from './routes/stateRoutes.js';
+import watchlistRoutes from './routes/watchlist.js';
 
 // Middleware
 import { authenticate } from './middleware/authMiddleware.js';
@@ -155,8 +156,12 @@ const allowedOrigins = new Set([
   // Development origins
   ...(isProduction ? [] : [
     "http://localhost:5173",
+    "http://localhost:5174",
+    "http://localhost:5175",
     "http://localhost:3000",
-    "http://127.0.0.1:5173"
+    "http://127.0.0.1:5173",
+    "http://127.0.0.1:5174",
+    "http://127.0.0.1:5175"
   ])
 ].filter(Boolean));
 
@@ -164,13 +169,20 @@ console.log('🌐 CORS allowlist:', Array.from(allowedOrigins));
 
 app.use(cors({
   origin: (origin, callback) => {
+    console.log(`🔍 CORS check for origin: ${origin || 'null'}`);
+
     // Allow requests with no origin (mobile apps, Postman, curl)
-    if (!origin) return callback(null, true);
-    
+    if (!origin) {
+      console.log(`✅ CORS allowing request with no origin`);
+      return callback(null, true);
+    }
+
     if (allowedOrigins.has(origin)) {
+      console.log(`✅ CORS allowing origin: ${origin}`);
       return callback(null, true);
     } else {
       console.warn(`🚫 CORS blocked request from: ${origin}`);
+      console.warn(`🚫 Allowed origins:`, Array.from(allowedOrigins));
       return callback(new Error('CORS policy violation'), false);
     }
   },
@@ -309,6 +321,7 @@ app.use('/api/inventory', authenticate, inventoryRoutes);
 app.use('/api/reports', reportLimiter, authenticate, reportRoutes);
 app.use('/api/stores', authenticate, storesRoutes);
 app.use('/api/state', authenticate, stateRoutes);
+app.use('/api/watchlist', authenticate, watchlistRoutes);
 
 // 404 handler
 app.use((req, res) => {

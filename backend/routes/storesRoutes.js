@@ -1,14 +1,14 @@
 // backend/routes/storesRoutes.js
 import express from 'express';
-import { 
+import {
   getAllStores,
   getStoresByRegion,
   getStoreById,
   searchStores,
   getStoresByMixedBeverage,
-  getStoresByDeliveryDay,
-  getStoreInventory
+  getStoresByDeliveryDay
 } from '../controllers/storesController.js';
+import { getStoreInventory } from '../controllers/inventoryController.js';
 
 const router = express.Router();
 

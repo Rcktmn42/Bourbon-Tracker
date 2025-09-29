@@ -12,7 +12,7 @@ const config = {
   development: {
     client: process.env.DB_CLIENT || 'sqlite3',
     connection: {
-      filename: path.resolve(__dirname, '..', 'BourbonDatabase', 'inventory.db'),
+      filename: path.resolve(__dirname, 'data', 'database.sqlite3'),
     },
     useNullAsDefault: true,
     migrations: {

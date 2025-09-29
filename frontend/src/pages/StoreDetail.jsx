@@ -78,14 +78,14 @@ const StoreInventoryCard = ({ item }) => {
       {/* Center: Product details (simplified from warehouse version) */}
       <div className="store-content-section">
         <div className="store-product-name">
-          {item.brand_name || 'Unknown Product'}
+          {item.brand_name || item.product_name || 'Unknown Product'}
         </div>
         <div className="store-meta-row">
           <span
-            className={`listing-type-badge ${(item.Listing_Type || 'unknown').toLowerCase()}`}
-            title={item.Listing_Type || 'N/A'}
+            className={`listing-type-badge ${(item.Listing_Type || item.listing_type || 'unknown').toLowerCase()}`}
+            title={item.Listing_Type || item.listing_type || 'N/A'}
           >
-            {item.Listing_Type || 'N/A'}
+            {item.Listing_Type || item.listing_type || 'N/A'}
           </span>
           <span className="store-product-price">
             {item.retail_price ? `$${item.retail_price}` : 'N/A'}

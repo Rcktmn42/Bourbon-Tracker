@@ -1,5 +1,7 @@
 // frontend/src/pages/Profile.jsx
 import React, { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
+import MyProfile from '../components/MyProfile';
 import './profile.css';
 
 export default function Profile() {
@@ -42,7 +44,7 @@ export default function Profile() {
         setLastName(data.last_name ?? '');
         setEmail(data.email ?? '');
         setPhoneNumber(data.phone_number ?? ''); // Backend sends formatted version
-      } catch (err) {
+      } catch {
         if (!ignore) setLoadError('Could not load your profile. Please try again.');
       } finally {
         if (!ignore) setLoading(false);
@@ -195,9 +197,21 @@ export default function Profile() {
       <div className="profile-panel">
         <div className="profile-header">
           <h1>My Profile</h1>
-          <p className="profile-subtitle">Manage your account details and password.</p>
+          <p className="profile-subtitle">Manage your account settings and personal information.</p>
         </div>
 
+        {/* Watchlist Navigation Notice */}
+        <div className="profile-notice">
+          <div className="notice-content">
+            <h3>Looking for your Watchlist?</h3>
+            <p>We've moved the watchlist to its own dedicated page for a better experience.</p>
+            <Link to="/watchlist" className="watchlist-link-btn">
+              Go to Watchlist →
+            </Link>
+          </div>
+        </div>
+
+        {/* Messages */}
         {(loadError || saveError || saveSuccess) && (
           <div className="profile-messages">
             {loadError && <div className="banner banner-error">{loadError}</div>}
@@ -206,119 +220,27 @@ export default function Profile() {
           </div>
         )}
 
-        {/* Profile Update Form */}
-        <form className="profile-form" onSubmit={handleProfileSave} noValidate>
-          <div className="form-grid">
-            <div className="form-field">
-              <label htmlFor="firstName">First name</label>
-              <input
-                id="firstName"
-                type="text"
-                value={firstName}
-                onChange={e => setFirstName(e.target.value)}
-                autoComplete="given-name"
-                required
-              />
-            </div>
-
-            <div className="form-field">
-              <label htmlFor="lastName">Last name</label>
-              <input
-                id="lastName"
-                type="text"
-                value={lastName}
-                onChange={e => setLastName(e.target.value)}
-                autoComplete="family-name"
-                required
-              />
-            </div>
-
-            <div className="form-field">
-              <label htmlFor="email">Email</label>
-              <input
-                id="email"
-                type="email"
-                value={email}
-                disabled
-                readOnly
-                className="readonly"
-                autoComplete="email"
-              />
-              <small className="hint">Email is managed by the system.</small>
-            </div>
-
-            <div className="form-field">
-              <label htmlFor="phoneNumber">Phone number</label>
-              <input
-                id="phoneNumber"
-                type="tel"
-                placeholder="(919) 555-1234 or 919-555-1234"
-                value={phoneNumber}
-                onChange={e => setPhoneNumber(e.target.value)}
-                autoComplete="tel"
-              />
-              <small className="hint">
-                Enter 10-digit US phone number. We'll format it automatically.
-              </small>
-            </div>
-          </div>
-
-          <div className="form-actions">
-            <button className="btn-primary" type="submit" disabled={saving}>
-              {saving ? 'Saving…' : 'Save Profile'}
-            </button>
-          </div>
-        </form>
-
-        {/* Password Change Form */}
-        <form className="profile-form" onSubmit={handlePasswordChange} noValidate>
-          <fieldset className="password-section">
-            <legend>Change password (optional)</legend>
-            <div className="form-grid">
-              <div className="form-field">
-                <label htmlFor="oldPassword">Current password</label>
-                <input
-                  id="oldPassword"
-                  type="password"
-                  value={oldPassword}
-                  onChange={e => setOldPassword(e.target.value)}
-                  autoComplete="current-password"
-                />
-              </div>
-
-              <div className="form-field">
-                <label htmlFor="newPassword">New password</label>
-                <input
-                  id="newPassword"
-                  type="password"
-                  value={newPassword}
-                  onChange={e => setNewPassword(e.target.value)}
-                  autoComplete="new-password"
-                />
-                <small className="hint">
-                  Use 8+ characters with a mix of upper/lowercase, numbers & symbols.
-                </small>
-              </div>
-
-              <div className="form-field">
-                <label htmlFor="confirmPassword">Confirm new password</label>
-                <input
-                  id="confirmPassword"
-                  type="password"
-                  value={confirmPassword}
-                  onChange={e => setConfirmPassword(e.target.value)}
-                  autoComplete="new-password"
-                />
-              </div>
-            </div>
-
-            <div className="form-actions">
-              <button className="btn-primary" type="submit" disabled={saving}>
-                {saving ? 'Changing…' : 'Change Password'}
-              </button>
-            </div>
-          </fieldset>
-        </form>
+        {/* Profile Content */}
+        <div className="profile-content">
+          <MyProfile
+            firstName={firstName}
+            setFirstName={setFirstName}
+            lastName={lastName}
+            setLastName={setLastName}
+            email={email}
+            phoneNumber={phoneNumber}
+            setPhoneNumber={setPhoneNumber}
+            oldPassword={oldPassword}
+            setOldPassword={setOldPassword}
+            newPassword={newPassword}
+            setNewPassword={setNewPassword}
+            confirmPassword={confirmPassword}
+            setConfirmPassword={setConfirmPassword}
+            onProfileSave={handleProfileSave}
+            onPasswordChange={handlePasswordChange}
+            saving={saving}
+          />
+        </div>
       </div>
     </div>
   );

@@ -8,23 +8,32 @@ const JWT_SECRET = process.env.JWT_SECRET;
 
 // Enhanced authentication supporting both Bearer tokens and cookies
 export function authenticate(req, res, next) {
+  console.log(`🔑 AUTH DEBUG: ${req.method} ${req.path}`);
+  console.log(`🔑 Headers:`, {
+    authorization: req.headers.authorization ? 'Present' : 'Missing',
+    cookie: req.headers.cookie ? 'Present' : 'Missing'
+  });
+
   let token = null;
-  
+
   // Try Authorization header first (Bearer token)
   const authHeader = req.headers.authorization;
   if (authHeader && authHeader.startsWith('Bearer ')) {
     token = authHeader.substring(7); // Remove 'Bearer ' prefix
     req.authMethod = 'bearer';
+    console.log(`🔑 Using Bearer token`);
   }
-  
+
   // Fall back to HTTP-only cookie
   if (!token && req.cookies.token) {
     token = req.cookies.token;
     req.authMethod = 'cookie';
+    console.log(`🔑 Using cookie token`);
   }
 
   if (!token) {
-    return res.status(401).json({ 
+    console.log(`🔑 No token found`);
+    return res.status(401).json({
       error: 'Authentication required',
       code: 'NO_TOKEN',
       message: 'Provide token via Authorization header (Bearer) or cookie'
@@ -34,6 +43,7 @@ export function authenticate(req, res, next) {
   try {
     const payload = jwt.verify(token, JWT_SECRET);
     req.user = payload;
+    console.log(`🔑 Auth successful: User ID ${payload.id}`);
     next();
   } catch (err) {
     let errorMessage = 'Invalid or expired token';

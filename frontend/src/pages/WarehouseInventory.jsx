@@ -207,51 +207,57 @@ const WarehouseInventory = () => {
     }
   }, []);
 
+  const sanitizeImagePath = (imagePath) => {
+    if (!imagePath) {
+      return null;
+    }
+
+    return imagePath
+      .replace(/\\/g, '/')
+      .replace(/^alcohol_images\//i, '')
+      .replace(/^\//, '');
+  };
+
   const ProductImage = React.memo(({ product }) => {
-    const [imageError, setImageError] = useState(false);
-    const [imageLoading, setImageLoading] = useState(true);
-    const [currentImageIndex, setCurrentImageIndex] = useState(0);
+    const [currentIndex, setCurrentIndex] = useState(0);
+    const [imageFailed, setImageFailed] = useState(false);
 
-    const getImageVariations = useCallback(() => {
-      if (!product.image_path || product.image_path === 'no image available') {
-        return [];
+    const imageSources = useMemo(() => {
+      const sources = [];
+
+      if (product?.image_url) {
+        sources.push(product.image_url);
       }
 
-      const variations = [
-        product.image_url,
-        `/api/images/${product.image_path}`,
-        `/api/images/${product.image_path.replace(/^alcohol_images[\\\/]/, '')}`,
-        `/api/images/${product.image_path.replace(/^.*[\\\/]/, '')}`,
-        `/api/images/${product.plu}.jpg`,
-        `/api/images/${product.plu}.png`,
-        product.nc_code ? `/api/images/${product.nc_code}.jpg` : null,
-        product.nc_code ? `/api/images/${product.nc_code}.png` : null,
-        `/api/images/${String(product.plu).padStart(5, '0')}.jpg`,
-        `/api/images/product_${product.plu}.jpg`
-      ];
+      if (product?.image_path) {
+        const normalized = sanitizeImagePath(product.image_path);
+        if (normalized) {
+          sources.push(`/api/images/${normalized}`);
+          sources.push(`/api/images/alcohol_images/${normalized}`);
+        }
+        const rawPath = product.image_path.replace(/^\//, '');
+        if (rawPath && rawPath !== normalized) {
+          sources.push(`/api/images/${rawPath}`);
+        }
+      }
 
-      return variations.filter(Boolean);
-    }, [product.image_path, product.image_url, product.plu, product.nc_code]);
+      return Array.from(new Set(sources));
+    }, [product?.image_url, product?.image_path]);
 
-    const imageVariations = useMemo(() => getImageVariations(), [getImageVariations]);
+    useEffect(() => {
+      setCurrentIndex(0);
+      setImageFailed(false);
+    }, [imageSources]);
 
-    const handleImageError = useCallback(() => {
-      if (currentImageIndex < imageVariations.length - 1) {
-        setCurrentImageIndex(prev => prev + 1);
-        setImageError(false);
-        setImageLoading(true);
+    const handleImageError = () => {
+      if (currentIndex < imageSources.length - 1) {
+        setCurrentIndex(prev => prev + 1);
       } else {
-        setImageError(true);
-        setImageLoading(false);
+        setImageFailed(true);
       }
-    }, [currentImageIndex, imageVariations.length]);
+    };
 
-    const handleImageLoad = useCallback(() => {
-      setImageLoading(false);
-      setImageError(false);
-    }, []);
-
-    if (imageVariations.length === 0 || (imageError && currentImageIndex >= imageVariations.length - 1)) {
+    if (imageSources.length === 0 || imageFailed) {
       return (
         <div className="product-image-placeholder">
           <span className="placeholder-icon">🥃</span>
@@ -262,11 +268,10 @@ const WarehouseInventory = () => {
     return (
       <div className="product-image-container">
         <img
-          src={imageVariations[currentImageIndex]}
-          alt={`${product.product_name} bottle`}
-          className={`product-image ${imageLoading ? 'loading' : ''}`}
+          src={imageSources[currentIndex]}
+          alt={`${product.product_name || 'Product'} bottle`}
+          className="product-image"
           onError={handleImageError}
-          onLoad={handleImageLoad}
         />
       </div>
     );
@@ -432,8 +437,8 @@ const WarehouseInventory = () => {
             ) : (
               <div className="mobile-card-layout">
                 {filteredInventory.map((product) => (
-                  <div 
-                    key={product.plu} 
+                  <div
+                    key={product.plu}
                     className="mobile-product-card clickable"
                     onClick={() => handleProductClick(product)}
                     title={`View shipments for ${product.product_name || 'this product'}`}
@@ -456,10 +461,18 @@ const WarehouseInventory = () => {
                           >
                             {product.listing_type || 'N/A'}
                           </span>
+                          <span className="mobile-product-plu">
+                            PLU: {product.plu || product.nc_code || 'N/A'}
+                          </span>
                           <span className="mobile-product-price">
                             {product.retail_price ? `$${product.retail_price}` : 'N/A'}
                           </span>
                         </div>
+                        {product.bottles_per_case && (
+                          <div className="mobile-bottles-per-case">
+                            Bottles Per Case: {product.bottles_per_case}
+                          </div>
+                        )}
                       </div>
 
                       <div className="soft-divider" aria-hidden="true"></div>

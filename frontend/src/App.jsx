@@ -28,6 +28,9 @@ import VerificationSuccess from './pages/VerificationSuccess';
 import RequestPasswordReset from './pages/RequestPasswordReset';
 import ResetPassword from './pages/ResetPassword';
 
+// WATCHLIST IMPORT - Add the new consolidated watchlist page
+import WatchlistPage from './pages/WatchlistPage';
+
 // Your existing CSS imports
 import './App.css';
 
@@ -48,6 +51,7 @@ function AuthenticatedLayout({ children }) {
               <Link to="/admin">Admin</Link>
             )}
             {/* REMOVED - Current Inventory and Historical Trends links */}
+            <Link to="/watchlist">Watchlist</Link>
             <Link to="/profile">Profile</Link>
           </div>
           <div className="nav-right">
@@ -155,6 +159,13 @@ function App() {
               <Route path="/profile" element={
                 <AuthenticatedLayout>
                   <Profile />
+                </AuthenticatedLayout>
+              } />
+
+              {/* Watchlist page */}
+              <Route path="/watchlist" element={
+                <AuthenticatedLayout>
+                  <WatchlistPage />
                 </AuthenticatedLayout>
               } />
               

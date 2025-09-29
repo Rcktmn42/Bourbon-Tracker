@@ -769,6 +769,15 @@
   font-weight: 500;
 }
 
+.expand-icon {
+  transition: transform 0.2s ease;
+  font-size: 0.9rem;
+}
+
+.expand-icon.rotated {
+  transform: rotate(180deg);
+}
+
 .date-content {
   padding: 20px;
   background: white;

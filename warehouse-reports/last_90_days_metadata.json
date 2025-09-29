@@ -1,34 +1,34 @@
 {
   "time_period": "last_90_days",
   "description": "Last 90 days",
-  "generated_at": "2025-09-03 16:29:42",
-  "start_date": "2025-06-05",
-  "end_date": "2025-09-03",
-  "total_products": 3241,
-  "products_with_inventory": 2379,
-  "products_with_images": 2900,
-  "total_inventory": 783696,
+  "generated_at": "2025-09-28 23:03:19",
+  "start_date": "2025-06-30",
+  "end_date": "2025-09-28",
+  "total_products": 3271,
+  "products_with_inventory": 2430,
+  "products_with_images": 2930,
+  "total_inventory": 843888,
   "listing_type_counts": {
     "Listed": {
-      "count": 2983,
-      "inventory": 780275
+      "count": 3002,
+      "inventory": 833338
     },
     "Limited": {
-      "count": 99,
-      "inventory": 522
+      "count": 101,
+      "inventory": 1808
     },
     "Unknown": {
       "count": 2,
       "inventory": 0
     },
     "Barrel": {
-      "count": 111,
-      "inventory": 147
+      "count": 118,
+      "inventory": 226
     },
     "Allocation": {
-      "count": 46,
-      "inventory": 2752
+      "count": 48,
+      "inventory": 8516
     }
   },
-  "file_modified": 1756931382
+  "file_modified": 1759114999
 }

@@ -958,36 +958,175 @@ export async function getShipments(req, res) {
   }
 }
 
-// NEW: Get store inventory
+// Get store inventory with proper lookup hierarchy (alcohol > bourbon > custom)
 export async function getStoreInventory(req, res) {
   try {
-    const { storeId } = req.params;
-    
-    const query = `
-      SELECT 
+    // Handle both parameter formats: id (from stores route) and storeId (from inventory route)
+    const storeId = req.params.id || req.params.storeId;
+
+    if (!storeId || isNaN(parseInt(storeId))) {
+      return res.status(400).json({
+        success: false,
+        error: 'Invalid store ID'
+      });
+    }
+
+    // Get all current inventory items for the store
+    const inventoryQuery = `
+      SELECT
         ci.plu,
-        COALESCE(b.name, a.brand_name) as product_name,
         ci.quantity,
         ci.last_updated,
-        a.retail_price,
-        a.size_ml,
-        a.Listing_Type,
         s.store_number,
         s.nickname,
         s.address
       FROM current_inventory ci
-      LEFT JOIN bourbons b ON ci.plu = b.plu
-      LEFT JOIN alcohol a ON ci.plu = a.nc_code
       JOIN stores s ON ci.store_id = s.store_id
       WHERE ci.store_id = ? AND ci.quantity > 0
-      ORDER BY product_name COLLATE NOCASE
+      ORDER BY ci.plu
     `;
-    
-    const inventory = await inventoryDb.raw(query, [parseInt(storeId)]);
-    res.json({ success: true, inventory });
+
+    const inventoryItems = await inventoryDb.raw(inventoryQuery, [parseInt(storeId)]);
+
+    if (inventoryItems.length === 0) {
+      return res.json({
+        success: true,
+        inventory: [],
+        store_info: null,
+        summary: {
+          total_items: 0,
+          unique_products: 0
+        }
+      });
+    }
+
+    // Extract PLUs for product lookups
+    const plus = inventoryItems.map(item => item.plu);
+    const placeholders = plus.map(() => '?').join(',');
+
+    // Step 1: Get product info from alcohol table (highest priority)
+    const alcoholQuery = `
+      SELECT
+        nc_code as plu,
+        brand_name,
+        retail_price,
+        size_ml,
+        Listing_Type,
+        image_path,
+        bottles_per_case
+      FROM alcohol
+      WHERE nc_code IN (${placeholders})
+    `;
+
+    const alcoholProducts = await inventoryDb.raw(alcoholQuery, plus);
+    const alcoholMap = {};
+    alcoholProducts.forEach(product => {
+      alcoholMap[product.plu] = product;
+    });
+
+    // Step 2: Get product info from bourbon table (fallback for items not in alcohol)
+    const remainingPlus = plus.filter(plu => !alcoholMap[plu]);
+    let bourbonMap = {};
+
+    if (remainingPlus.length > 0) {
+      const bourbonPlaceholders = remainingPlus.map(() => '?').join(',');
+      const bourbonQuery = `
+        SELECT
+          plu,
+          name as brand_name
+        FROM bourbons
+        WHERE plu IN (${bourbonPlaceholders})
+      `;
+
+      const bourbonProducts = await inventoryDb.raw(bourbonQuery, remainingPlus);
+      bourbonProducts.forEach(product => {
+        bourbonMap[product.plu] = {
+          plu: product.plu,
+          brand_name: product.brand_name,
+          retail_price: null,
+          size_ml: null,
+          Listing_Type: 'Bourbon',
+          image_path: null,
+          bottles_per_case: null
+        };
+      });
+    }
+
+    // TODO: Step 3: Get from custom watchlist tables when implemented
+    // For now, we'll handle unknown products gracefully
+
+    // Combine inventory with product information using lookup hierarchy
+    const enrichedInventory = inventoryItems.map(item => {
+      const storeInfo = {
+        store_number: item.store_number,
+        nickname: item.nickname,
+        address: item.address
+      };
+
+      // Apply lookup hierarchy: alcohol > bourbon > fallback
+      let productInfo;
+      if (alcoholMap[item.plu]) {
+        productInfo = alcoholMap[item.plu];
+      } else if (bourbonMap[item.plu]) {
+        productInfo = bourbonMap[item.plu];
+      } else {
+        // Fallback for unknown products
+        productInfo = {
+          plu: item.plu,
+          brand_name: `Unknown Product (PLU ${item.plu})`,
+          retail_price: null,
+          size_ml: null,
+          Listing_Type: 'Unknown',
+          image_path: null,
+          bottles_per_case: null
+        };
+      }
+
+      return {
+        plu: item.plu,
+        product_name: productInfo.brand_name,
+        quantity: item.quantity,
+        last_updated: item.last_updated,
+        retail_price: productInfo.retail_price,
+        size_ml: productInfo.size_ml,
+        listing_type: productInfo.Listing_Type,
+        image_path: productInfo.image_path,
+        bottles_per_case: productInfo.bottles_per_case,
+        image_url: getImagePath(productInfo.image_path),
+        has_image: !!(productInfo.image_path && productInfo.image_path !== 'no image available'),
+        ...storeInfo
+      };
+    });
+
+    // Sort by product name
+    enrichedInventory.sort((a, b) => a.product_name.localeCompare(b.product_name));
+
+    res.json({
+      success: true,
+      inventory: enrichedInventory,
+      store_info: enrichedInventory[0] ? {
+        store_number: enrichedInventory[0].store_number,
+        nickname: enrichedInventory[0].nickname,
+        address: enrichedInventory[0].address
+      } : null,
+      summary: {
+        total_items: enrichedInventory.length,
+        unique_products: enrichedInventory.length,
+        lookup_sources: {
+          alcohol_table: alcoholProducts.length,
+          bourbon_table: Object.keys(bourbonMap).length,
+          unknown: enrichedInventory.filter(item => item.listing_type === 'Unknown').length
+        }
+      }
+    });
+
   } catch (error) {
     console.error('Error in getStoreInventory:', error);
-    res.status(500).json({ success: false, error: error.message });
+    res.status(500).json({
+      success: false,
+      error: 'Failed to fetch store inventory',
+      details: error.message
+    });
   }
 }
 
