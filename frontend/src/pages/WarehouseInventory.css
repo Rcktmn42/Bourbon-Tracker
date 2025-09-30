@@ -257,7 +257,6 @@
   border-radius: 8px;
 }
 
-
 .product-image-placeholder {
   font-size: 2rem;
   opacity: 0.7;
@@ -272,9 +271,7 @@
 }
 .placeholder-icon { opacity: 0.7; }
 
-/* === CARD LAYOUT - now handled by shared ProductCard.css === */
-
-/* === MOBILE CARD CSS - restored for functionality === */
+/* === MOBILE CARD CSS === */
 .mobile-card-layout {
   display: flex;
   flex-direction: column;
@@ -282,30 +279,31 @@
 }
 
 /* 3-column grid: IMG | CONTENT | CURRENT */
-.mobile-product-card {
+.warehouse-inventory .mobile-product-card {
   background: rgba(255, 255, 255, 0.95);
   border-radius: 12px;
   box-shadow: 0 3px 8px rgba(0,0,0,0.15);
   display: grid;
   grid-template-columns: 90px 1fr 75px;
-  height: 140px;
+  min-height: 140px;
+  height: auto;
   overflow: hidden;
   border: 2px solid rgba(106, 69, 31, 0.1);
   transition: all 0.2s ease;
   align-items: stretch;
 }
 
-.mobile-product-card:hover {
+.warehouse-inventory .mobile-product-card:hover {
   box-shadow: 0 4px 12px rgba(0,0,0,0.2);
   border-color: rgba(106, 69, 31, 0.3);
   transform: translateY(-1px);
 }
 
-.mobile-product-card.clickable {
+.warehouse-inventory .mobile-product-card.clickable {
   cursor: pointer;
 }
 
-.mobile-product-card.clickable:hover {
+.warehouse-inventory .mobile-product-card.clickable:hover {
   background: rgba(255, 255, 255, 1);
   box-shadow: 0 6px 16px rgba(106, 69, 31, 0.15);
   border-color: #8b4513;
@@ -320,12 +318,13 @@
   justify-content: center;
   background: linear-gradient(135deg, rgba(106,69,31,0.05), rgba(90,62,27,0.05));
   z-index: 0;
+  overflow: hidden;
 }
 
 .mobile-image-section .product-image-container {
   width: 100%;
   height: 100%;
-  max-height: 124px;
+  max-height: 100%;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -333,17 +332,22 @@
 
 /* Center: split (top 2/3, bottom 1/3) */
 .mobile-content-section.split-layout {
-  display: grid;
-  grid-template-rows: 1.9fr 1px 1.1fr;
+  display: flex;
+  flex-direction: column;
   padding: 10px;
   min-width: 0;
+  gap: 4px;
+  justify-content: space-between;
 }
 
 .content-top {
-  display: grid;
-  grid-template-rows: auto auto auto;
-  align-content: start;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
   min-width: 0;
+  gap: 4px;
+  flex: 1;
 }
 
 .mobile-product-name {
@@ -351,14 +355,14 @@
   color: #3D2B1F;
   font-size: 0.95rem;
   line-height: 1.2;
-  max-height: 2.4em;
+  text-align: center;
+  margin-bottom: 6px;
+  word-break: break-word;
+  hyphens: auto;
   overflow: hidden;
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
-  text-align: center;
-  margin-bottom: 6px;
-  word-break: break-word;
 }
 
 .mobile-meta-row {
@@ -396,10 +400,12 @@
   width: 100%;
   background: rgba(106, 69, 31, 0.15);
   height: 1px;
+  flex-shrink: 0;
 }
 
 .content-bottom {
   padding-top: 3px;
+  flex-shrink: 0;
 }
 
 .warehouse-inventory .mobile-peak-low {
@@ -437,14 +443,15 @@
 
 /* Right: Current inventory */
 .mobile-current-section {
-  display: grid;
-  grid-template-rows: auto 1fr;
+  display: flex;
+  flex-direction: column;
   align-items: center;
-  justify-items: center;
+  justify-content: center;
   background: linear-gradient(135deg, #6a451f, #8B4513);
   color: white;
   text-align: center;
   padding: 8px 6px;
+  min-height: 100%;
 }
 
 .mobile-current-label {
@@ -453,6 +460,7 @@
   text-transform: uppercase;
   letter-spacing: 0.5px;
   opacity: 0.9;
+  margin-bottom: 4px;
 }
 
 .mobile-current-value {
@@ -460,7 +468,6 @@
   font-weight: 900;
   line-height: 1;
   text-shadow: 0 1px 2px rgba(0,0,0,0.3);
-  align-self: center;
 }
 
 /* Error Messages */
@@ -496,6 +503,20 @@
   .action-buttons { flex-direction: column; gap: 0.5rem; align-items: stretch; }
   .load-button, .refresh-button, .reset-button { width: 100%; }
 
+  .warehouse-inventory .mobile-product-card {
+    min-height: 135px;
+    grid-template-columns: 85px 1fr 72px;
+  }
+
+  .mobile-content-section.split-layout {
+    padding: 8px;
+    gap: 3px;
+  }
+
+  .content-top {
+    gap: 3px;
+  }
+
   .mobile-product-name { font-size: 0.9rem; }
   .mobile-meta-row { gap: 6px; }
   .mobile-meta-row .listing-type-badge { font-size: 0.68rem; padding: 2px 5px; }
@@ -510,19 +531,132 @@
   .inventory-container { padding: 1rem; }
   .inventory-header h1 { font-size: 1.5rem; }
 
-  .mobile-product-card {
-    height: 120px;
-    grid-template-columns: 80px 1fr 70px;
+  .warehouse-inventory .mobile-product-card {
+    min-height: 160px; /* Increased to give more room */
+    height: auto;
+    grid-template-columns: 75px 1fr 65px;
   }
 
-  .mobile-image-section .product-image-container { max-height: 104px; }
-  .mobile-product-name { font-size: 0.85rem; }
-  .mobile-meta-row .listing-type-badge { font-size: 0.62rem; padding: 2px 4px; }
-  .mobile-product-plu { font-size: 0.7rem; }
-  .mobile-product-price { font-size: 0.8rem; }
-  .mobile-bottles-per-case { font-size: 0.7rem; }
-  .mobile-current-label { font-size: 0.68rem; }
-  .mobile-current-value { font-size: 1.6rem; }
-  .mobile-peak-low { font-size: 0.7rem; }
-  .mobile-stat-date { font-size: 0.62rem; }
+  .mobile-image-section {
+    padding: 6px;
+  }
+
+  .mobile-content-section.split-layout {
+    padding: 6px 8px;
+    gap: 3px;
+  }
+
+  .content-top {
+    gap: 3px;
+  }
+
+  .mobile-product-name {
+    font-size: 0.8rem;
+    line-height: 1.15;
+    margin-bottom: 4px;
+    -webkit-line-clamp: 3; /* Allow 3 lines for long names */
+    max-height: 3.45em; /* Accommodate 3 lines */
+  }
+
+  .mobile-meta-row {
+    gap: 4px;
+    flex-wrap: wrap;
+    justify-content: center; /* Center the badges */
+  }
+
+  .mobile-meta-row .listing-type-badge {
+    font-size: 0.6rem;
+    padding: 2px 4px;
+    min-width: 50px;
+  }
+
+  .mobile-product-plu {
+    font-size: 0.68rem;
+  }
+
+  .mobile-product-price {
+    font-size: 0.75rem;
+  }
+
+  .mobile-bottles-per-case {
+    font-size: 0.68rem;
+    margin-top: 2px;
+  }
+
+  .content-bottom {
+    padding-top: 2px;
+  }
+
+  .warehouse-inventory .mobile-peak-low {
+    font-size: 0.68rem;
+    gap: 1px;
+  }
+
+  .warehouse-inventory .mobile-stat-label,
+  .warehouse-inventory .mobile-stat-value {
+    font-size: 0.68rem;
+  }
+
+  .warehouse-inventory .mobile-stat-date {
+    display: none; /* Hide dates to save space */
+  }
+
+  .mobile-current-section {
+    padding: 6px 4px;
+  }
+
+  .mobile-current-label {
+    font-size: 0.65rem;
+    letter-spacing: 0.3px;
+    margin-bottom: 2px;
+  }
+
+  .mobile-current-value {
+    font-size: 1.5rem;
+  }
+}
+
+/* Extra small screens */
+@media (max-width: 360px) {
+  .warehouse-inventory .mobile-product-card {
+    min-height: 170px; /* Even more height for very small screens */
+    grid-template-columns: 70px 1fr 60px;
+  }
+
+  .mobile-product-name {
+    font-size: 0.75rem;
+    line-height: 1.1;
+    -webkit-line-clamp: 3;
+    max-height: 3.3em;
+  }
+
+  .mobile-meta-row {
+    flex-direction: column; /* Stack badges vertically on very small screens */
+    gap: 2px;
+    align-items: center;
+  }
+
+  .mobile-meta-row .listing-type-badge {
+    font-size: 0.58rem;
+    width: 100%;
+    max-width: 120px;
+  }
+
+  .mobile-product-plu,
+  .mobile-product-price {
+    font-size: 0.65rem;
+  }
+
+  .mobile-bottles-per-case {
+    font-size: 0.64rem;
+    margin-top: 1px;
+  }
+
+  .mobile-current-value {
+    font-size: 1.3rem;
+  }
+
+  .warehouse-inventory .mobile-peak-low {
+    font-size: 0.64rem;
+  }
 }
