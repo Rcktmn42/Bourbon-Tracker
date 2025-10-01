@@ -29,12 +29,9 @@ const ProductImage = React.memo(({ product }) => {
     if (product?.image_path) {
       const normalized = sanitizeImagePath(product.image_path);
       if (normalized) {
+        // After sanitization, we have just the filename (e.g., '638.jpg')
+        // Request it from /api/images/ which nginx serves from /opt/alcohol_images/
         sources.push(`/api/images/${normalized}`);
-        sources.push(`/api/images/alcohol_images/${normalized}`);
-      }
-      const rawPath = product.image_path.replace(/^\//, '');
-      if (rawPath && rawPath !== normalized) {
-        sources.push(`/api/images/${rawPath}`);
       }
     }
 
