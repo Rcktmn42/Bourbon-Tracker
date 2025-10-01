@@ -212,15 +212,17 @@ const WarehouseInventory = () => {
       return null;
     }
 
-    return imagePath
-      .replace(/\\/g, '/')
-      .replace(/^alcohol_images\//i, '')
-      .replace(/^\//, '');
+    // Normalize all backslashes to forward slashes
+    const normalized = imagePath.replace(/\\/g, '/');
+
+    // Remove leading slash if present
+    return normalized.replace(/^\//, '');
   };
 
   const ProductImage = React.memo(({ product }) => {
     const [currentIndex, setCurrentIndex] = useState(0);
     const [imageFailed, setImageFailed] = useState(false);
+    const [errorInfo, setErrorInfo] = useState(null);
 
     const imageSources = useMemo(() => {
       const sources = [];
@@ -232,35 +234,58 @@ const WarehouseInventory = () => {
       if (product?.image_path) {
         const normalized = sanitizeImagePath(product.image_path);
         if (normalized) {
+          // Try the normalized path directly (e.g., alcohol_images/638.jpg)
           sources.push(`/api/images/${normalized}`);
-          sources.push(`/api/images/alcohol_images/${normalized}`);
-        }
-        const rawPath = product.image_path.replace(/^\//, '');
-        if (rawPath && rawPath !== normalized) {
-          sources.push(`/api/images/${rawPath}`);
+
+          // If path doesn't start with alcohol_images/, try adding it
+          if (!normalized.startsWith('alcohol_images/')) {
+            sources.push(`/api/images/alcohol_images/${normalized}`);
+          }
         }
       }
 
+      console.log(`[Image Sources] ${product?.product_name}:`, sources);
       return Array.from(new Set(sources));
     }, [product?.image_url, product?.image_path]);
 
     useEffect(() => {
       setCurrentIndex(0);
       setImageFailed(false);
+      setErrorInfo(null);
     }, [imageSources]);
 
-    const handleImageError = () => {
+    const handleImageError = (e) => {
+      const failedSrc = imageSources[currentIndex];
+      console.error(`[Image Error] Failed to load: ${failedSrc}`, {
+        product: product?.product_name,
+        plu: product?.plu,
+        currentIndex,
+        totalSources: imageSources.length,
+        allSources: imageSources,
+        errorType: e?.type,
+        target: e?.target?.src
+      });
+
       if (currentIndex < imageSources.length - 1) {
         setCurrentIndex(prev => prev + 1);
       } else {
         setImageFailed(true);
+        setErrorInfo({
+          attempted: imageSources,
+          product: product?.product_name
+        });
       }
     };
 
     if (imageSources.length === 0 || imageFailed) {
       return (
-        <div className="product-image-placeholder">
+        <div className="product-image-placeholder" title={errorInfo ? `Failed to load image. Tried: ${errorInfo.attempted.join(', ')}` : 'No image available'}>
           <span className="placeholder-icon">🥃</span>
+          {errorInfo && (
+            <div style={{ fontSize: '0.5rem', color: '#999', marginTop: '2px', textAlign: 'center' }}>
+              No image
+            </div>
+          )}
         </div>
       );
     }
@@ -272,6 +297,9 @@ const WarehouseInventory = () => {
           alt={`${product.product_name || 'Product'} bottle`}
           className="product-image"
           onError={handleImageError}
+          onLoad={() => {
+            console.log(`[Image Success] Loaded: ${imageSources[currentIndex]} for ${product?.product_name}`);
+          }}
           loading="lazy"
           style={{ display: 'block' }}
         />
