@@ -8,6 +8,7 @@ import rateLimit from 'express-rate-limit';
 import compression from 'compression';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
+import crypto from 'crypto';
 
 // Routes
 import authRoutes from './routes/authRoutes.js';
@@ -88,7 +89,7 @@ if (isProduction) {
 // CSP Nonce middleware for production security
 app.use((req, res, next) => {
   if (isProduction) {
-    res.locals.cspNonce = require('crypto').randomBytes(16).toString('base64');
+    res.locals.cspNonce = crypto.randomBytes(16).toString('base64');
   }
   next();
 });

@@ -38,7 +38,10 @@ export const AuthProvider = ({ children }) => {
     try {
       const response = await fetch('/api/auth/login', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Requested-With': 'XMLHttpRequest'
+        },
         credentials: 'include',
         body: JSON.stringify(credentials),
       });
@@ -68,7 +71,11 @@ export const AuthProvider = ({ children }) => {
 
   const logout = useCallback(async () => {
     try {
-      await fetch('/api/auth/logout', { method: 'POST', credentials: 'include' });
+      await fetch('/api/auth/logout', {
+        method: 'POST',
+        headers: { 'X-Requested-With': 'XMLHttpRequest' },
+        credentials: 'include'
+      });
     } catch (err) {
       console.error('logout error:', err);
     } finally {
