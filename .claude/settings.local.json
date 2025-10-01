@@ -26,7 +26,8 @@
       "Bash(for file in Profile.jsx ResetPassword.jsx RequestPasswordReset.jsx)",
       "Bash(do echo \"=== $file ===\")",
       "Bash(grep:*)",
-      "Bash(done)"
+      "Bash(done)",
+      "Bash(npm run build:*)"
     ],
     "deny": [],
     "ask": []

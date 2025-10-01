@@ -117,10 +117,10 @@ export const schemas = {
       .pattern(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/)
   }),
 
-  // Generic ID parameter
+  // Generic ID parameter (accepts either 'id' or 'userId')
   idParam: Joi.object({
-    id: Joi.number().integer().positive().required(),
-    userId: Joi.number().integer().positive().required()
+    id: Joi.number().integer().positive(),
+    userId: Joi.number().integer().positive()
   }).or('id', 'userId')
 };
 

@@ -44,7 +44,7 @@ export default function Admin() {
       .then(res => {
         if (!res.ok) throw new Error('Failed to update status');
         setUsers(us =>
-          us.map(u => (u.user_id === userId ? { ...u, is_active: isActive ? 1 : 0 } : u))
+          us.map(u => (u.user_id === userId ? { ...u, status: newStatus } : u))
         );
       })
       .catch(err => setError(err.toString()));
@@ -129,7 +129,7 @@ export default function Admin() {
                   </select>
                 </td>
                 <td>
-                  <button 
+                  <button
                     className="reset-password-btn"
                     onClick={() => initiatePasswordReset(u.user_id, u.first_name, u.email)}
                     disabled={resetLoading[u.user_id] || u.status !== 'active'}

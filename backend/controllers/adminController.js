@@ -37,11 +37,10 @@ export async function updateUserRole(req, res) {
 // Update a user's status (with email notifications)
 export async function updateUserStatus(req, res) {
   const { userId } = req.params;
-  const { status } = req.body;
-  
-  if (!['pending','active','disabled'].includes(status)) {
-    return res.status(400).json({ error: 'Invalid status' });
-  }
+  const { isActive } = req.body;
+
+  // Convert boolean to status string
+  const statusValue = isActive ? 'active' : 'disabled';
 
   try {
     // Get user info before updating (for email)
@@ -57,14 +56,14 @@ export async function updateUserStatus(req, res) {
     // Update user status
     const count = await db('users')
       .where({ user_id: userId })
-      .update({ status, updated_at: new Date() });
+      .update({ status: statusValue, updated_at: new Date() });
 
     if (!count) {
       return res.status(404).json({ error: 'User not found' });
     }
 
-    // Send approval email if user was activated
-    if (status === 'active' && user.status === 'pending') {
+    // Send approval email if user was activated (from non-active to active)
+    if (isActive && user.status !== 'active') {
       emailService.sendApprovalEmail(user.email, user.first_name)
         .then(result => {
           if (result.success) {
@@ -76,7 +75,10 @@ export async function updateUserStatus(req, res) {
         .catch(err => console.error('Approval email error:', err));
     }
 
-    res.json({ message: `User ${userId} status set to ${status}` });
+    res.json({
+      message: `User ${userId} ${isActive ? 'activated' : 'deactivated'}`,
+      success: true
+    });
   } catch (err) {
     console.error('Update user status error:', err);
     res.status(500).json({ error: 'Failed to update user status' });
