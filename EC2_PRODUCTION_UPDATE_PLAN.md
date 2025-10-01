@@ -342,3 +342,256 @@ pm2 start backend/server.js --name "bourbon-tracker"
 **Branch**: main → production-readiness (6 commits)
 **Environment**: EC2 Production
 **Estimated Duration**: 25-35 minutes total
+
+---
+
+## ACTUAL DEPLOYMENT NOTES (2025-01-30)
+
+### Critical Issues Encountered & Resolutions
+
+This section documents the actual deployment experience and fixes required beyond the original plan.
+
+#### 1. **Nginx Configuration Structure Mismatch**
+
+**Issue**: EC2 production uses RHEL/Amazon Linux nginx structure (`/etc/nginx/nginx.conf` with `conf.d/` subdirectories), NOT Debian/Ubuntu structure (`sites-available/sites-enabled`).
+
+**Original Plan Said**:
+```bash
+sudo cp /opt/bourbon-tracker/nginx-site.conf /etc/nginx/sites-available/bourbon-tracker
+```
+
+**Reality**: The `sites-available/` and `sites-enabled/` directories don't exist on Amazon Linux.
+
+**Solution**:
+- The server blocks are already embedded in `/etc/nginx/nginx.conf`
+- Created production-specific nginx config: `nginx.conf.production`
+- Replaced entire `/etc/nginx/nginx.conf` with updated version
+
+**Commands Used**:
+```bash
+# Backup original
+sudo cp /etc/nginx/nginx.conf /etc/nginx/nginx.conf.backup-$(date +%Y%m%d)
+
+# Copy production config (upload from local nginx.conf.production)
+sudo cp nginx.conf.production /etc/nginx/nginx.conf
+
+# Remove old conflicting conf.d files
+sudo rm /etc/nginx/conf.d/bourbon-tracker.conf
+sudo rm /etc/nginx/conf.d/bourbon_site.conf
+
+# Test and reload
+sudo nginx -t
+sudo systemctl reload nginx
+```
+
+**Key Changes in nginx.conf.production**:
+- Combined rate limiting zones in `http` block
+- Changed frontend serving from `proxy_pass http://localhost:5173` (Vite dev server) to `root /opt/bourbon-tracker/frontend/dist` (production build)
+- Updated rate limiting: `auth` zone to `5r/m`, `api` zone to `20r/s`
+- Added upstream backend with keepalive connections
+- Fixed image serving path to `/opt/Images/alcohol_images/`
+
+#### 2. **Frontend Was Running Development Server in Production**
+
+**Issue**: Production nginx was proxying to `localhost:5173` (Vite dev server), not serving built static files.
+
+**Solution**:
+```bash
+# Build the frontend first (CRITICAL MISSING STEP)
+cd /opt/bourbon-tracker/frontend
+sudo npm run build
+
+# Verify dist folder created
+ls -la /opt/bourbon-tracker/frontend/dist
+
+# Update nginx to serve from /opt/bourbon-tracker/frontend/dist
+```
+
+#### 3. **Database Path Configuration Error**
+
+**Issue**: Backend failed to start with `KnexTimeoutError: Knex: Timeout acquiring a connection`.
+
+**Root Cause**: Incorrect database path in `.env` file.
+
+**Original .env had**:
+```
+DATABASE_URL=/opt/bourbon-tracker/data/database.sqlite3
+```
+
+**Actual location**:
+```
+DATABASE_URL=/opt/bourbon-tracker/backend/data/database.sqlite3
+```
+
+**Fix**:
+```bash
+# Verify actual database locations
+ls -la /opt/bourbon-tracker/backend/data/database.sqlite3
+ls -la /opt/BourbonDatabase/inventory.db
+
+# Update .env with correct paths
+nano /opt/bourbon-tracker/.env
+
+# Restart PM2
+pm2 restart bourbon-tracker
+```
+
+#### 4. **ES Module `require()` Error**
+
+**Issue**: Backend crashed on startup with `ReferenceError: require is not defined` at line 91 of `server.js`.
+
+**Root Cause**: Code used `require('crypto')` in an ES module project (`"type": "module"` in package.json).
+
+**Failing Code** (line 91):
+```javascript
+res.locals.cspNonce = require('crypto').randomBytes(16).toString('base64');
+```
+
+**Fix**: Changed to ES module import:
+```javascript
+// At top of server.js (line 11)
+import crypto from 'crypto';
+
+// In middleware (line 92)
+res.locals.cspNonce = crypto.randomBytes(16).toString('base64');
+```
+
+**Deployment**:
+```bash
+# After code fix, on EC2:
+cd /opt/bourbon-tracker
+sudo git pull origin production-readiness
+
+# Completely restart PM2 to clear cache
+pm2 stop bourbon-tracker
+pm2 delete bourbon-tracker
+pm2 start backend/server.js --name "bourbon-tracker"
+pm2 save
+```
+
+#### 5. **CSRF Protection Blocking Login**
+
+**Issue**: Frontend login requests failed with error: `CSRF protection: Missing required headers for write operation`
+
+**Root Cause**: Backend's `validateCSRFToken` middleware requires `X-Requested-With: XMLHttpRequest` header on all POST/PATCH/PUT/DELETE requests in production, but frontend wasn't sending it.
+
+**Backend Requirement** (`validationMiddleware.js` line 14):
+```javascript
+if (!csrfToken && req.headers['x-requested-with'] !== 'XMLHttpRequest') {
+  return res.status(403).json({
+    error: 'CSRF protection: Missing required headers for write operation'
+  });
+}
+```
+
+**Fix**: Updated `AuthContext.jsx` to include header:
+```javascript
+// Login request (line 39-46)
+const response = await fetch('/api/auth/login', {
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json',
+    'X-Requested-With': 'XMLHttpRequest'  // Added
+  },
+  credentials: 'include',
+  body: JSON.stringify(credentials),
+});
+
+// Logout request (line 74-78)
+await fetch('/api/auth/logout', {
+  method: 'POST',
+  headers: { 'X-Requested-With': 'XMLHttpRequest' },  // Added
+  credentials: 'include'
+});
+```
+
+**Additional**: Created utility file for future consistency:
+- Created `/frontend/src/utils/api.js` with `apiFetch()` wrapper that automatically includes CSRF headers
+- Existing code manually updated for immediate fix
+- Future refactoring can use this utility
+
+**Deployment**:
+```bash
+cd /opt/bourbon-tracker
+sudo git pull origin production-readiness
+cd frontend
+sudo npm run build
+# Browser hard refresh required
+```
+
+### Updated Environment Variables (Actual Production)
+
+These are the ACTUAL paths and values needed in `/opt/bourbon-tracker/.env`:
+
+```bash
+# Node Environment
+NODE_ENV=production
+PORT=3000
+FRONTEND_URL=https://wakepour.com
+
+# Database Configuration (CORRECTED PATHS)
+DB_CLIENT=sqlite3
+DATABASE_URL=/opt/bourbon-tracker/backend/data/database.sqlite3
+INVENTORY_DATABASE_URL=/opt/BourbonDatabase/inventory.db
+IMAGES_DIR=/opt/Images/alcohol_images
+
+# JWT & Security
+JWT_SECRET=your_64_character_random_string_here
+
+# Email Configuration
+EMAIL_USER=your_gmail_address@gmail.com
+EMAIL_PASS=your_gmail_app_password
+EMAIL_FROM_NAME=WakePour
+EMAIL_FROM_ADDRESS=your_from_email@domain.com
+ADMIN_EMAIL=your_admin@domain.com
+
+# Rate Limiting (Production)
+RATE_LIMIT_WINDOW_MS=900000
+RATE_LIMIT_MAX_REQUESTS=100
+AUTH_RATE_LIMIT_MAX=5
+
+# Logging
+LOG_LEVEL=info
+LOG_FORMAT=combined
+```
+
+### Files Modified During Deployment
+
+1. **Backend**:
+   - `/backend/server.js` - Added `import crypto from 'crypto'` and fixed CSP nonce generation
+
+2. **Frontend**:
+   - `/frontend/src/contexts/AuthContext.jsx` - Added `X-Requested-With` header to login/logout
+   - `/frontend/src/utils/api.js` - Created new utility file (future use)
+
+3. **Infrastructure**:
+   - `nginx.conf.production` - Created production nginx config for Amazon Linux
+   - `/etc/nginx/nginx.conf` - Replaced entire file on EC2
+
+4. **Configuration**:
+   - `.env` - Fixed `DATABASE_URL` path from `/data/` to `/backend/data/`
+
+### Lessons Learned
+
+1. **Always verify infrastructure assumptions**: Don't assume Debian/Ubuntu file structure on RHEL/Amazon Linux
+2. **Check actual file locations**: Database paths can differ from documentation
+3. **ES modules require imports, not require()**: Project uses `"type": "module"`
+4. **CSRF headers are mandatory in production**: Frontend must send `X-Requested-With: XMLHttpRequest`
+5. **Build frontend before deploying**: Production serves static files, not dev server
+6. **PM2 caching**: Must delete and recreate PM2 processes after code changes, not just restart
+
+### Actual Deployment Time: ~45 minutes
+(Including troubleshooting and fixes)
+
+### Final Success Verification
+
+```bash
+# All checks passed:
+✅ Frontend loads from /opt/bourbon-tracker/frontend/dist
+✅ Backend running on port 3000 via PM2
+✅ Nginx serving HTTPS with correct SSL certs
+✅ Database connections working (both user and inventory DBs)
+✅ Login/logout functional with CSRF protection
+✅ No errors in PM2 logs
+✅ Health endpoint returning 200
+```

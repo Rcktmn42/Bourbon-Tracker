@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import apiFetch from '../utils/api';
 import './DeliveryAnalysis.css';
 
 const CACHE_KEY = 'delivery-analysis-cache';
@@ -111,10 +112,8 @@ const DeliveryAnalysis = () => {
         setError(null);
 
         try {
-            const response = await fetch('/api/inventory/delivery-analysis', {
+            const response = await apiFetch('/api/inventory/delivery-analysis', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                credentials: 'include',
                 body: JSON.stringify({
                     plu: selectedProduct.plu,
                     weeksBack,
@@ -544,13 +543,11 @@ const StoresWithoutDeliveries = ({ analysis, expandedSections, toggleSection }) 
 
         setLoading(true);
         try {
-            const response = await fetch('/api/inventory/stores-without-deliveries', {
+            const response = await apiFetch('/api/inventory/stores-without-deliveries', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                credentials: 'include',
                 body: JSON.stringify({
                     deliveredStoreIds: analysis.deliveries.map(d => d.store_id),
-                    otherDropStoreIds: analysis.storesWithOtherDrops ? 
+                    otherDropStoreIds: analysis.storesWithOtherDrops ?
                         analysis.storesWithOtherDrops.map(s => s.store_id) : []
                 })
             });
@@ -574,13 +571,11 @@ const StoresWithoutDeliveries = ({ analysis, expandedSections, toggleSection }) 
     React.useEffect(() => {
         const getCount = async () => {
             try {
-                const response = await fetch('/api/inventory/stores-without-deliveries', {
+                const response = await apiFetch('/api/inventory/stores-without-deliveries', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    credentials: 'include',
                     body: JSON.stringify({
                         deliveredStoreIds: analysis.deliveries.map(d => d.store_id),
-                        otherDropStoreIds: analysis.storesWithOtherDrops ? 
+                        otherDropStoreIds: analysis.storesWithOtherDrops ?
                             analysis.storesWithOtherDrops.map(s => s.store_id) : []
                     })
                 });
