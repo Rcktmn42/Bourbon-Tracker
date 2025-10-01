@@ -272,6 +272,8 @@ const WarehouseInventory = () => {
           alt={`${product.product_name || 'Product'} bottle`}
           className="product-image"
           onError={handleImageError}
+          loading="lazy"
+          style={{ display: 'block' }}
         />
       </div>
     );
@@ -348,26 +350,25 @@ const WarehouseInventory = () => {
               </select>
             </div>
 
-            {/* Reset button and checkbox on same row */}
-            <div className="filter-controls-row">
-              <button onClick={resetFilters} className="reset-button">
-                Reset
-              </button>
-
-              <div className="filter-group checkbox-group">
-                <label className="checkbox-label">
-                  <input
-                    type="checkbox"
-                    checked={filterSettings.hideZeroActivity}
-                    onChange={(e) => setFilterSettings(prev => ({
-                      ...prev,
-                      hideZeroActivity: e.target.checked
-                    }))}
-                  />
-                  Hide items with no activity
-                </label>
-              </div>
+            {/* Checkbox below product types */}
+            <div className="filter-group checkbox-group">
+              <label className="checkbox-label">
+                <input
+                  type="checkbox"
+                  checked={filterSettings.hideZeroActivity}
+                  onChange={(e) => setFilterSettings(prev => ({
+                    ...prev,
+                    hideZeroActivity: e.target.checked
+                  }))}
+                />
+                Hide items with no activity
+              </label>
             </div>
+
+            {/* Reset button below checkbox */}
+            <button onClick={resetFilters} className="reset-button">
+              Reset
+            </button>
           </div>
 
           <div className="action-buttons">
