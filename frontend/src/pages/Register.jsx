@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import apiFetch from '../utils/api';
 import './register.css';
 
 const passwordChecks = [
@@ -50,9 +51,8 @@ export default function Register() {
     setIsLoading(true);
 
     try {
-      const res = await fetch('/api/auth/register', {
+      const res = await apiFetch('/api/auth/register', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           first_name: form.first_name.trim(),
           last_name: form.last_name.trim(),

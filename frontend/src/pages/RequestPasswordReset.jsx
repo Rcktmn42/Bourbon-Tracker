@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
+import apiFetch from '../utils/api';
 import './RequestPasswordReset.css';
 
 function RequestPasswordReset() {
@@ -22,12 +23,9 @@ function RequestPasswordReset() {
     }
 
     try {
-      const response = await fetch('/api/auth/request-password-reset', {
+      const response = await apiFetch('/api/auth/request-password-reset', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ email: email.trim() }),
+        body: JSON.stringify({ email: email.trim() })
       });
 
       const data = await response.json();

@@ -1,6 +1,7 @@
 // frontend/src/pages/AdminUsers.jsx
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
+import apiFetch from '../utils/api';
 import './AdminUsers.css';
 
 const AdminUsers = () => {
@@ -54,13 +55,8 @@ const AdminUsers = () => {
   const updateUserRole = async (userId, newRole) => {
     try {
       setUpdatingUser(userId);
-      const response = await fetch(`/api/admin/users/${userId}/role`, {
+      const response = await apiFetch(`/api/admin/users/${userId}/role`, {
         method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-Requested-With': 'XMLHttpRequest'
-        },
-        credentials: 'include',
         body: JSON.stringify({ role: newRole })
       });
 
@@ -86,13 +82,8 @@ const AdminUsers = () => {
   const updateUserStatus = async (userId, isActive) => {
     try {
       setUpdatingUser(userId);
-      const response = await fetch(`/api/admin/users/${userId}/status`, {
+      const response = await apiFetch(`/api/admin/users/${userId}/status`, {
         method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-Requested-With': 'XMLHttpRequest'
-        },
-        credentials: 'include',
         body: JSON.stringify({ isActive })
       });
 

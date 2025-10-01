@@ -1,6 +1,7 @@
 // frontend/src/pages/Admin.jsx
 
 import React, { useEffect, useState } from 'react';
+import apiFetch from '../utils/api';
 import './admin.css';
 
 export default function Admin() {
@@ -19,10 +20,8 @@ export default function Admin() {
   }, []);
 
   const changeRole = (userId, newRole) => {
-    fetch(`/api/admin/users/${userId}/role`, {
+    apiFetch(`/api/admin/users/${userId}/role`, {
       method: 'PATCH',
-      credentials: 'include',
-      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ role: newRole })
     })
       .then(res => {
@@ -35,10 +34,8 @@ export default function Admin() {
   };
 
   const changeStatus = (userId, newStatus) => {
-    fetch(`/api/admin/users/${userId}/status`, {
+    apiFetch(`/api/admin/users/${userId}/status`, {
       method: 'PATCH',
-      credentials: 'include',
-      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ status: newStatus })
     })
       .then(res => {
@@ -58,10 +55,8 @@ export default function Admin() {
     setResetLoading(prev => ({ ...prev, [userId]: true }));
     
     try {
-      const response = await fetch(`/api/admin/users/${userId}/reset-password`, {
-        method: 'POST',
-        credentials: 'include',
-        headers: { 'Content-Type': 'application/json' }
+      const response = await apiFetch(`/api/admin/users/${userId}/reset-password`, {
+        method: 'POST'
       });
 
       const data = await response.json();

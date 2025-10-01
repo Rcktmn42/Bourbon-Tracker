@@ -1,6 +1,7 @@
 // frontend/src/pages/WatchlistPage.jsx
 import React, { useState, useEffect, useMemo } from 'react';
 import BourbonBarrelToggle from '../components/BourbonBarrelToggle';
+import apiFetch from '../utils/api';
 import './WatchlistPage.css';
 
 const sanitizeImagePath = (imagePath) => {
@@ -210,13 +211,8 @@ const WatchlistPage = () => {
 
   const handleAddFromSearch = async (product) => {
     try {
-      const response = await fetch('/api/watchlist', {
+      const response = await apiFetch('/api/watchlist', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-Requested-With': 'XMLHttpRequest'
-        },
-        credentials: 'include',
         body: JSON.stringify({
           plu: product.plu,
           interest_type: 'interested'
@@ -251,13 +247,8 @@ const WatchlistPage = () => {
     try {
       if (isCurrentlyTracked) {
         // Mark as not interested
-        const response = await fetch('/api/watchlist', {
+        const response = await apiFetch('/api/watchlist', {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'X-Requested-With': 'XMLHttpRequest'
-          },
-          credentials: 'include',
           body: JSON.stringify({
             plu,
             interest_type: 'not_interested'
@@ -281,9 +272,8 @@ const WatchlistPage = () => {
           );
 
           if (notInterestedEntry) {
-            const deleteResponse = await fetch(`/api/watchlist/${notInterestedEntry.watch_id}`, {
-              method: 'DELETE',
-              credentials: 'include'
+            const deleteResponse = await apiFetch(`/api/watchlist/${notInterestedEntry.watch_id}`, {
+              method: 'DELETE'
             });
 
             if (deleteResponse.ok) {
@@ -371,13 +361,8 @@ const WatchlistPage = () => {
         payload.bottles_per_case = parseInt(newItem.bottles_per_case);
       }
 
-      const response = await fetch('/api/watchlist', {
+      const response = await apiFetch('/api/watchlist', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-Requested-With': 'XMLHttpRequest'
-        },
-        credentials: 'include',
         body: JSON.stringify(payload)
       });
 
@@ -403,10 +388,8 @@ const WatchlistPage = () => {
 
   const handleCustomToggle = async (item) => {
     try {
-      const response = await fetch(`/api/watchlist/${item.watch_id}`, {
+      const response = await apiFetch(`/api/watchlist/${item.watch_id}`, {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
         body: JSON.stringify({ active: !item.active })
       });
 
@@ -428,9 +411,8 @@ const WatchlistPage = () => {
 
   const handleRemoveCustom = async (watchId) => {
     try {
-      const response = await fetch(`/api/watchlist/${watchId}`, {
-        method: 'DELETE',
-        credentials: 'include'
+      const response = await apiFetch(`/api/watchlist/${watchId}`, {
+        method: 'DELETE'
       });
 
       if (response.ok) {

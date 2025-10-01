@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useSearchParams, Link, useNavigate } from 'react-router-dom';
+import apiFetch from '../utils/api';
 import './ResetPassword.css';
 
 function ResetPassword() {
@@ -88,15 +89,12 @@ function ResetPassword() {
     }
 
     try {
-      const response = await fetch('/api/auth/reset-password', {
+      const response = await apiFetch('/api/auth/reset-password', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
         body: JSON.stringify({
           token,
           newPassword
-        }),
+        })
       });
 
       const data = await response.json();

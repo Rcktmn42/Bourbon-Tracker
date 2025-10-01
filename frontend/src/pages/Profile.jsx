@@ -2,6 +2,7 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import MyProfile from '../components/MyProfile';
+import apiFetch from '../utils/api';
 import './profile.css';
 
 export default function Profile() {
@@ -105,10 +106,8 @@ export default function Profile() {
         phone_number: phoneNumber?.trim() || null // Send raw input - backend will normalize
       };
 
-      const response = await fetch('/api/user/me', {
+      const response = await apiFetch('/api/user/me', {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
         body: JSON.stringify(body)
       });
 
@@ -151,10 +150,8 @@ export default function Profile() {
         new_password: newPassword
       };
 
-      const response = await fetch('/api/auth/change-password', {
+      const response = await apiFetch('/api/auth/change-password', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
         body: JSON.stringify(body)
       });
 

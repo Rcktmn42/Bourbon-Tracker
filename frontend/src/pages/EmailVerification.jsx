@@ -1,6 +1,7 @@
 // frontend/src/components/EmailVerification.jsx
 import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
+import apiFetch from '../utils/api';
 import './EmailVerification.css';
 
 export default function EmailVerification() {
@@ -85,9 +86,8 @@ export default function EmailVerification() {
     setError('');
 
     try {
-      const response = await fetch('/api/auth/verify-email', {
+      const response = await apiFetch('/api/auth/verify-email', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           email: email,
           code: verificationCode
@@ -135,9 +135,8 @@ export default function EmailVerification() {
     setError('');
 
     try {
-      const response = await fetch('/api/auth/resend-verification', {
+      const response = await apiFetch('/api/auth/resend-verification', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: email })
       });
 
