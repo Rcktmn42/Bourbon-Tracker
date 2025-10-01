@@ -11,39 +11,40 @@ This file tracks known issues, bugs, and technical debt for the Bourbon Tracker 
 ### 🔴 HIGH PRIORITY
 
 #### Issue #1: CSRF Protection Breaking Write Operations in Production
-**Status**: 🔴 In Progress (Partial Fix Applied)
+**Status**: ✅ Resolved
 **Created**: 2025-01-30
+**Resolved**: 2025-10-01
 **Affects**: All POST/PATCH/PUT/DELETE operations
 **Severity**: High - Blocking core features
 
 **Description**:
-Backend requires `X-Requested-With: XMLHttpRequest` header on all write operations in production, but most frontend fetch calls don't include it. This causes `CSRF protection: Missing required headers for write operation` errors.
+Backend requires `X-Requested-With: XMLHttpRequest` header on all write operations in production, but most frontend fetch calls didn't include it. This caused `CSRF protection: Missing required headers for write operation` errors.
 
-**Confirmed Broken**:
-- ✅ Login - Fixed manually
-- ✅ Logout - Fixed manually
-- ✅ Delivery Analysis - Fixed with utility
-- ❌ Watchlist Add/Edit/Delete - BROKEN (confirmed in production)
-- ❌ Watchlist Toggle Notifications - BROKEN (confirmed in production)
-- ❌ Admin User Management - BROKEN (confirmed in production)
+**Resolution**:
+Systematically refactored all write operations (22 total) across 9 frontend files to use the `apiFetch` utility which automatically includes required CSRF headers.
 
-**Likely Broken** (untested):
-- User Registration
-- Email Verification
-- Password Reset
-- Profile Updates
-- Admin User Management
+**Files Updated**:
+- ✅ `/frontend/src/pages/Register.jsx` - 1 POST operation
+- ✅ `/frontend/src/pages/WatchlistPage.jsx` - 6 operations (POST, PATCH, DELETE)
+- ✅ `/frontend/src/pages/EmailVerification.jsx` - 2 POST operations
+- ✅ `/frontend/src/pages/Profile.jsx` - 2 operations (PUT, POST)
+- ✅ `/frontend/src/pages/ResetPassword.jsx` - 1 POST operation
+- ✅ `/frontend/src/pages/RequestPasswordReset.jsx` - 1 POST operation
+- ✅ `/frontend/src/pages/AdminUsers.jsx` - 2 PATCH operations
+- ✅ `/frontend/src/pages/Admin.jsx` - 3 operations (2 PATCH, 1 POST)
+- ✅ `/frontend/src/contexts/AuthContext.jsx` - Login/Logout already fixed
+
+**Additional Fixes**:
+- Fixed Admin.jsx status update logic to properly handle database `status` column ('pending', 'active', 'disabled')
+- Fixed backend validation schema to accept both `id` and `userId` parameters
+- Updated backend controller to convert `isActive` boolean to status string for database
+
+**Total Operations Fixed**: 22 write operations across 9 files
 
 **Root Cause**:
 `/backend/middleware/validationMiddleware.js` enforces CSRF headers in production, but frontend was developed/tested in dev mode where this check is disabled.
 
-**Action Plan**: See `CSRF_FIX_ACTION_PLAN.md`
-
-**Estimated Fix Time**: 2-3 hours
-
-**Files Affected**:
-- All files with POST/PATCH/PUT/DELETE fetch calls
-- See action plan for complete list
+**Action Plan**: See `CSRF_FIX_ACTION_PLAN.md` (now completed)
 
 ---
 

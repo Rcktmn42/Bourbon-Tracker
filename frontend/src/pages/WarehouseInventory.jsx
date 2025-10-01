@@ -303,6 +303,7 @@ const WarehouseInventory = () => {
           <h2>Filter Options</h2>
 
           <div className="filter-controls">
+            {/* Time Period - Full width */}
             <div className="filter-group time-period">
               <label>Time Period</label>
               <select
@@ -319,6 +320,7 @@ const WarehouseInventory = () => {
               </select>
             </div>
 
+            {/* Product Types - Full width */}
             <div className="filter-group">
               <label>Product Types</label>
               <select
@@ -346,22 +348,25 @@ const WarehouseInventory = () => {
               </select>
             </div>
 
-            <button onClick={resetFilters} className="reset-button">
-              Reset
-            </button>
+            {/* Reset button and checkbox on same row */}
+            <div className="filter-controls-row">
+              <button onClick={resetFilters} className="reset-button">
+                Reset
+              </button>
 
-            <div className="filter-group checkbox-group">
-              <label className="checkbox-label">
-                <input
-                  type="checkbox"
-                  checked={filterSettings.hideZeroActivity}
-                  onChange={(e) => setFilterSettings(prev => ({
-                    ...prev,
-                    hideZeroActivity: e.target.checked
-                  }))}
-                />
-                Hide items with no activity
-              </label>
+              <div className="filter-group checkbox-group">
+                <label className="checkbox-label">
+                  <input
+                    type="checkbox"
+                    checked={filterSettings.hideZeroActivity}
+                    onChange={(e) => setFilterSettings(prev => ({
+                      ...prev,
+                      hideZeroActivity: e.target.checked
+                    }))}
+                  />
+                  Hide items with no activity
+                </label>
+              </div>
             </div>
           </div>
 
@@ -486,7 +491,7 @@ const WarehouseInventory = () => {
                             </span>
                             {product.peak_inventory_date && (
                               <span className="mobile-stat-date">
-                                {new Date(product.peak_inventory_date).toLocaleDateString()}
+                                {new Date(product.peak_inventory_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
                               </span>
                             )}
                           </div>
@@ -497,7 +502,7 @@ const WarehouseInventory = () => {
                             </span>
                             {product.low_inventory_date && (
                               <span className="mobile-stat-date">
-                                {new Date(product.low_inventory_date).toLocaleDateString()}
+                                {new Date(product.low_inventory_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
                               </span>
                             )}
                           </div>
