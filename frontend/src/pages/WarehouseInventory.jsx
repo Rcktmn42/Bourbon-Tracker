@@ -213,7 +213,10 @@ const WarehouseInventory = () => {
     }
 
     // Normalize all backslashes to forward slashes
-    const normalized = imagePath.replace(/\\/g, '/');
+    let normalized = imagePath.replace(/\\/g, '/');
+
+    // Remove 'alcohol_images/' prefix (case insensitive)
+    normalized = normalized.replace(/^alcohol_images\//i, '');
 
     // Remove leading slash if present
     return normalized.replace(/^\//, '');
@@ -234,13 +237,9 @@ const WarehouseInventory = () => {
       if (product?.image_path) {
         const normalized = sanitizeImagePath(product.image_path);
         if (normalized) {
-          // Try the normalized path directly (e.g., alcohol_images/638.jpg)
+          // After sanitization, we have just the filename (e.g., '638.jpg')
+          // Request it from /api/images/ which nginx serves from /opt/alcohol_images/
           sources.push(`/api/images/${normalized}`);
-
-          // If path doesn't start with alcohol_images/, try adding it
-          if (!normalized.startsWith('alcohol_images/')) {
-            sources.push(`/api/images/alcohol_images/${normalized}`);
-          }
         }
       }
 

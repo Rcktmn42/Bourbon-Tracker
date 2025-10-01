@@ -175,7 +175,7 @@ http {
 
         # Image serving - Direct from nginx (production path)
         location /api/images/ {
-            alias /opt/Images/alcohol_images/;
+            alias /opt/alcohol_images/;
 
             # Security headers for images
             add_header X-Content-Type-Options nosniff;
