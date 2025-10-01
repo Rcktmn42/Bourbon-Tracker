@@ -119,8 +119,9 @@ export const schemas = {
 
   // Generic ID parameter
   idParam: Joi.object({
-    id: Joi.number().integer().positive().required()
-  })
+    id: Joi.number().integer().positive().required(),
+    userId: Joi.number().integer().positive().required()
+  }).or('id', 'userId')
 };
 
 // Rate limiting bypass for internal requests

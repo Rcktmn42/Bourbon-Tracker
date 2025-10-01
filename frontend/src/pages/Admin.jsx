@@ -34,14 +34,17 @@ export default function Admin() {
   };
 
   const changeStatus = (userId, newStatus) => {
+    // Convert status string to isActive boolean
+    const isActive = newStatus === 'active';
+
     apiFetch(`/api/admin/users/${userId}/status`, {
       method: 'PATCH',
-      body: JSON.stringify({ status: newStatus })
+      body: JSON.stringify({ isActive })
     })
       .then(res => {
         if (!res.ok) throw new Error('Failed to update status');
         setUsers(us =>
-          us.map(u => (u.user_id === userId ? { ...u, status: newStatus } : u))
+          us.map(u => (u.user_id === userId ? { ...u, is_active: isActive ? 1 : 0 } : u))
         );
       })
       .catch(err => setError(err.toString()));
