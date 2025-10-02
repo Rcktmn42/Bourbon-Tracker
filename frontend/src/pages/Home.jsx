@@ -112,12 +112,12 @@ export default function Home() {
                 👤 Manage Profile
               </button>
               
-              <button 
-                className="account-button coming-soon"
-                disabled
+              <button
+                className="account-button"
+                onClick={() => navigate('/watchlist')}
               >
                 🔔 Watchlist & Alerts
-                <span className="report-description">Coming soon</span>
+                <span className="report-description">Track your favorite products</span>
               </button>
             </div>
           </div>

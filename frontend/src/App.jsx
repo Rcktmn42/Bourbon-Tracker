@@ -51,7 +51,6 @@ function AuthenticatedLayout({ children }) {
               <Link to="/admin">Admin</Link>
             )}
             {/* REMOVED - Current Inventory and Historical Trends links */}
-            <Link to="/watchlist">Watchlist</Link>
             <Link to="/profile">Profile</Link>
           </div>
           <div className="nav-right">
