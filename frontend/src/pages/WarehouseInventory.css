@@ -16,6 +16,7 @@
   z-index: 1;
   margin: 0;
   padding: 1rem;
+  overscroll-behavior-y: contain;
 }
 
 .inventory-container {

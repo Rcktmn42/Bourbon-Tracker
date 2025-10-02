@@ -18,7 +18,7 @@ const WarehouseInventory = () => {
   const [activeRequests, setActiveRequests] = useState(new Set());
 
   const [filterSettings, setFilterSettings] = useState({
-    timePeriod: 'current_month',
+    timePeriod: 'last_30_days',
     productTypes: ['Allocation', 'Limited', 'Barrel'],
     hideZeroActivity: true
   });
@@ -145,7 +145,7 @@ const WarehouseInventory = () => {
 
   const resetFilters = useCallback(() => {
     setFilterSettings({
-      timePeriod: 'current_month',
+      timePeriod: 'last_30_days',
       productTypes: ['Allocation', 'Limited', 'Barrel'],
       hideZeroActivity: true
     });
@@ -501,11 +501,9 @@ const WarehouseInventory = () => {
                             {product.retail_price ? `$${product.retail_price}` : 'N/A'}
                           </span>
                         </div>
-                        {product.bottles_per_case && (
-                          <div className="mobile-bottles-per-case">
-                            Bottles Per Case: {product.bottles_per_case}
-                          </div>
-                        )}
+                        <div className="mobile-bottles-per-case">
+                          Bottles/Case: {product.bottles_per_case || 'N/A'}
+                        </div>
                       </div>
 
                       <div className="soft-divider" aria-hidden="true"></div>

@@ -148,7 +148,7 @@ DATABASE_URL=/opt/bourbon-tracker/data/database.sqlite3
 INVENTORY_DATABASE_URL=/opt/BourbonDatabase/inventory.db
 
 # Images directory
-IMAGES_DIR=/opt/Images/alcohol_images
+IMAGES_DIR=/opt/alcohol_images
 
 # Rate limiting (production values)
 RATE_LIMIT_WINDOW_MS=900000
@@ -389,7 +389,7 @@ sudo systemctl reload nginx
 - Changed frontend serving from `proxy_pass http://localhost:5173` (Vite dev server) to `root /opt/bourbon-tracker/frontend/dist` (production build)
 - Updated rate limiting: `auth` zone to `5r/m`, `api` zone to `20r/s`
 - Added upstream backend with keepalive connections
-- Fixed image serving path to `/opt/Images/alcohol_images/`
+- Fixed image serving path to `/opt/alcohol_images/`
 
 #### 2. **Frontend Was Running Development Server in Production**
 
@@ -533,7 +533,7 @@ FRONTEND_URL=https://wakepour.com
 DB_CLIENT=sqlite3
 DATABASE_URL=/opt/bourbon-tracker/backend/data/database.sqlite3
 INVENTORY_DATABASE_URL=/opt/BourbonDatabase/inventory.db
-IMAGES_DIR=/opt/Images/alcohol_images
+IMAGES_DIR=/opt/alcohol_images
 
 # JWT & Security
 JWT_SECRET=your_64_character_random_string_here
