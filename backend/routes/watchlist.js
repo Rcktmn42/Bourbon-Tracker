@@ -1,41 +1,98 @@
 // backend/routes/watchlist.js
-import express from 'express';
+
+import { Router } from 'express';
 import watchlistController from '../controllers/watchlistController.js';
+import { authenticate, requireAdmin } from '../middleware/authMiddleware.js';
+import rateLimit from 'express-rate-limit';
 
-const router = express.Router();
+const router = Router();
 
-const callController = (method) => async (req, res, next) => {
-  try {
-    await method.call(watchlistController, req, res, next);
-  } catch (error) {
-    if (typeof next === 'function') {
-      next(error);
-    } else {
-      throw error;
-    }
-  }
-};
+// Rate limiters
+const customPluLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000, // 1 hour
+  max: process.env.NODE_ENV === 'production' ? 10 : 1000, // 10 in production, 1000 in development
+  message: { error: 'Too many custom items added. Please try again later.' },
+  standardHeaders: true,
+  legacyHeaders: false,
+  keyGenerator: (req) => req.user?.userId || req.ip
+});
 
-// User watchlist routes
-router.get('/', callController(watchlistController.getUserWatchlist));
-router.post('/', callController(watchlistController.addToWatchlist));
-router.patch('/:watchId', callController(watchlistController.updateWatchlistItem));
-router.delete('/:watchId', callController(watchlistController.removeFromWatchlist));
+const watchlistLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: process.env.NODE_ENV === 'production' ? 50 : 200,
+  message: { error: 'Too many watchlist requests. Please try again later.' },
+  standardHeaders: true,
+  legacyHeaders: false
+});
 
-// Get default premium products for watchlist
-router.get('/default-products', callController(watchlistController.getDefaultProducts));
+const bulkOperationLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000, // 1 hour
+  max: process.env.NODE_ENV === 'production' ? 5 : 100, // 5 in production, 100 in development
+  message: { error: 'Too many bulk operations. Please try again later.' },
+  standardHeaders: true,
+  legacyHeaders: false,
+  keyGenerator: (req) => req.user?.userId || req.ip
+});
 
-// Get user preferences (raw watchlist items with interest_type)
-router.get('/user-preferences', callController(watchlistController.getUserPreferences));
+// Core watchlist endpoints
+router.get('/', 
+  authenticate, 
+  watchlistLimiter, 
+  watchlistController.getUserWatchlist
+);
 
-// Product search for adding to watchlist
-router.get('/search/products', callController(watchlistController.searchProducts));
+router.get('/catalog', 
+  authenticate, 
+  watchlistLimiter, 
+  watchlistController.getCatalog
+);
 
-// Recent changes for watchlist items
-router.get('/changes', callController(watchlistController.getWatchlistChanges));
+router.post('/', 
+  authenticate, 
+  customPluLimiter, 
+  watchlistController.addToWatchlist
+);
 
-// Admin routes
-router.get('/admin/analytics', callController(watchlistController.getWatchlistAnalytics));
+router.patch('/:watchId', 
+  authenticate, 
+  watchlistLimiter, 
+  watchlistController.updateWatchlistItem
+);
+
+router.delete('/:watchId', 
+  authenticate, 
+  watchlistLimiter, 
+  watchlistController.removeFromWatchlist
+);
+
+// Bulk operations
+router.post('/bulk/toggle', 
+  authenticate, 
+  bulkOperationLimiter, 
+  watchlistController.bulkToggleWatchlist
+);
+
+router.get('/export', 
+  authenticate, 
+  watchlistLimiter, 
+  watchlistController.exportWatchlist
+);
+
+router.post('/import',
+  authenticate,
+  bulkOperationLimiter,
+  watchlistController.importWatchlist
+);
+
+router.post('/reset-to-defaults',
+  authenticate,
+  bulkOperationLimiter,
+  watchlistController.resetToDefaults
+);
+
+// Admin endpoints (to be implemented)
+// router.get('/admin/pending-review', requireAdmin, adminController.getPendingReview);
+// router.post('/admin/reconcile/:plu', requireAdmin, adminController.reconcilePLU);
+// router.post('/admin/bulk-reconcile', requireAdmin, adminController.bulkReconcile);
 
 export default router;
-

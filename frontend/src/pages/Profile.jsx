@@ -23,6 +23,9 @@ export default function Profile() {
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
 
+  // Watchlist reset state
+  const [resetConfirmation, setResetConfirmation] = useState('');
+
   useEffect(() => {
     let ignore = false;
 
@@ -162,13 +165,46 @@ export default function Profile() {
       }
 
       setSaveSuccess('Password changed successfully.');
-      
+
       // Clear password fields after success
       setOldPassword('');
       setNewPassword('');
       setConfirmPassword('');
     } catch (err) {
       setSaveError(err.message || 'Password change failed. Please try again.');
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function handleResetWatchlist(e) {
+    e.preventDefault();
+
+    if (resetConfirmation !== 'RESET') {
+      setSaveError('Please type RESET to confirm this action.');
+      return;
+    }
+
+    setSaveError('');
+    setSaveSuccess('');
+    setSaving(true);
+
+    try {
+      const response = await apiFetch('/api/watchlist/reset-to-defaults', {
+        method: 'POST',
+        body: JSON.stringify({})
+      });
+
+      const payload = await response.json();
+
+      if (!response.ok) {
+        throw new Error(payload?.message || 'Failed to reset watchlist');
+      }
+
+      setSaveSuccess(`Watchlist reset complete! All items returned to default. (Removed ${payload.removed_count} custom items and overrides)`);
+      setResetConfirmation('');
+    } catch (err) {
+      setSaveError(err.message || 'Failed to reset watchlist. Please try again.');
     } finally {
       setSaving(false);
     }
@@ -237,6 +273,46 @@ export default function Profile() {
             onPasswordChange={handlePasswordChange}
             saving={saving}
           />
+
+          {/* Watchlist Management - Danger Zone */}
+          <div className="watchlist-management">
+            <form className="profile-form danger-zone" onSubmit={handleResetWatchlist} noValidate>
+              <fieldset>
+                <legend className="danger-legend">⚠️ Watchlist Reset (Danger Zone)</legend>
+                <div className="danger-zone-content">
+                  <p className="danger-warning">
+                    <strong>Reset All Watchlist Items to Default</strong><br />
+                    This will remove ALL custom items and turn all default items back ON.
+                    This action cannot be undone.
+                  </p>
+
+                  <div className="form-field">
+                    <label htmlFor="resetConfirmation">
+                      Type <strong>RESET</strong> to confirm
+                    </label>
+                    <input
+                      id="resetConfirmation"
+                      type="text"
+                      value={resetConfirmation}
+                      onChange={(e) => setResetConfirmation(e.target.value)}
+                      placeholder="Type RESET"
+                      autoComplete="off"
+                    />
+                  </div>
+
+                  <div className="form-actions">
+                    <button
+                      className="btn-danger"
+                      type="submit"
+                      disabled={saving || resetConfirmation !== 'RESET'}
+                    >
+                      {saving ? 'Resetting…' : 'Reset Watchlist to Defaults'}
+                    </button>
+                  </div>
+                </div>
+              </fieldset>
+            </form>
+          </div>
         </div>
       </div>
     </div>

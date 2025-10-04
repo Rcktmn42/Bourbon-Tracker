@@ -27,7 +27,13 @@
       "Bash(do echo \"=== $file ===\")",
       "Bash(grep:*)",
       "Bash(done)",
-      "Bash(npm run build:*)"
+      "Bash(npm run build:*)",
+      "Read(//opt/**)",
+      "Bash(xargs:*)",
+      "Bash(npx knex migrate:up:*)",
+      "Bash(redis-server:*)",
+      "Bash(sudo apt-get:*)",
+      "Bash(sudo apt-get install:*)"
     ],
     "deny": [],
     "ask": []

@@ -30,6 +30,9 @@ dotenv.config();
 // Initialize database with safety measures
 import databaseManager from './config/databaseSafety.js';
 
+// Workers
+import notificationWorker from './workers/notificationWorker.js';
+
 // Get __dirname for ES modules
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -360,7 +363,15 @@ async function startServer() {
     // Initialize database connections with safety measures
     console.log('🔧 Initializing database connections...');
     await databaseManager.initialize();
-    
+
+    // Start notification worker
+    if (isProduction || process.env.ENABLE_NOTIFICATIONS === 'true') {
+      console.log('🔔 Starting notification worker...');
+      notificationWorker.start();
+    } else {
+      console.log('🔕 Notification worker disabled in development (set ENABLE_NOTIFICATIONS=true to enable)');
+    }
+
     // Start server after database is ready
     const server = app.listen(PORT, () => {
       console.log(`\n🚀 Server running on port ${PORT}`);

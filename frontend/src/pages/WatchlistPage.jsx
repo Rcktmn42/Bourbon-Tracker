@@ -1,875 +1,546 @@
 // frontend/src/pages/WatchlistPage.jsx
-import React, { useState, useEffect, useMemo } from 'react';
+
+import { useState, useEffect } from 'react';
+import { apiFetch } from '../utils/api';
 import BourbonBarrelToggle from '../components/BourbonBarrelToggle';
-import apiFetch from '../utils/api';
 import './WatchlistPage.css';
 
-const sanitizeImagePath = (imagePath) => {
-  if (!imagePath) {
-    return null;
-  }
+// Product image component
+const ProductImage = ({ product }) => {
+  const hasImage = product.has_image && product.image_url;
 
-  return imagePath
-    .replace(/\\/g, '/')
-    .replace(/^alcohol_images\//i, '')
-    .replace(/^\//, '');
-};
-
-const WatchlistProductImage = React.memo(({ item }) => {
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const [imageFailed, setImageFailed] = useState(false);
-
-  const imageSources = useMemo(() => {
-    const sources = [];
-
-    if (item?.image_url) {
-      sources.push(item.image_url);
-    }
-
-    if (item?.image_path) {
-      const normalized = sanitizeImagePath(item.image_path);
-      if (normalized) {
-        // After sanitization, we have just the filename (e.g., '638.jpg')
-        // Request it from /api/images/ which nginx serves from /opt/alcohol_images/
-        sources.push(`/api/images/${normalized}`);
-      }
-    }
-
-    return Array.from(new Set(sources));
-  }, [item?.image_url, item?.image_path]);
-
-  useEffect(() => {
-    setCurrentIndex(0);
-    setImageFailed(false);
-  }, [imageSources]);
-
-  const handleImageError = () => {
-    if (currentIndex < imageSources.length - 1) {
-      setCurrentIndex(prev => prev + 1);
-    } else {
-      setImageFailed(true);
-    }
-  };
-
-  if (imageSources.length === 0 || imageFailed) {
-    return (
-      <div className="product-image-placeholder">
-        🥃
-      </div>
-    );
-  }
-
-  return (
-    <div className="product-image-container">
-      <img
-        src={imageSources[currentIndex]}
-        alt={item?.brand_name || 'Product image'}
-        className="product-image"
-        onError={handleImageError}
-      />
+  return hasImage ? (
+    <img
+      src={product.image_url}
+      alt={product.brand_name || 'Product'}
+      className="product-image"
+    />
+  ) : (
+    <div className="product-image-placeholder">
+      <span>No Image</span>
     </div>
   );
-});
+};
 
-const WatchlistPage = () => {
-  // Search state
-  const [searchTerm, setSearchTerm] = useState('');
-  const [searchResults, setSearchResults] = useState([]);
-  const [isSearching, setIsSearching] = useState(false);
-  const [showSearchResults, setShowSearchResults] = useState(false);
+export default function WatchlistPage() {
+  const [activeList, setActiveList] = useState([]);
+  const [catalogList, setCatalogList] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState('my-list'); // 'my-list' | 'catalog'
+  const [search, setSearch] = useState('');
+  const [categoryFilter, setCategoryFilter] = useState('all');
+  const [showDisabledOnly, setShowDisabledOnly] = useState(false);
+  const [page, setPage] = useState(1);
+  const [listExpanded, setListExpanded] = useState(true);
+  const [addExpanded, setAddExpanded] = useState(false);
+  const [pagination, setPagination] = useState(null);
+  const [customPLU, setCustomPLU] = useState('');
+  const [customName, setCustomName] = useState('');
+  const [message, setMessage] = useState(null);
 
-  // Default products state
-  const [defaultProducts, setDefaultProducts] = useState([]);
-  const [notInterestedItems, setNotInterestedItems] = useState(new Set());
-  const [defaultLoading, setDefaultLoading] = useState(true);
-  const [currentPage, setCurrentPage] = useState(1);
-  const [selectedFilter, setSelectedFilter] = useState('all');
-
-  // Custom items state
-  const [customItems, setCustomItems] = useState([]);
-  const [customLoading, setCustomLoading] = useState(true);
-  const [showAddForm, setShowAddForm] = useState(false);
-  const [newItem, setNewItem] = useState({
-    plu: '',
-    custom_name: '',
-    retail_price: '',
-    bottles_per_case: ''
-  });
-
-  // Global state
-  const [error, setError] = useState('');
-
-  // Watchlist search state
-  const [watchlistSearchTerm, setWatchlistSearchTerm] = useState('');
-
-  // Default section collapse state
-  const [isDefaultSectionCollapsed, setIsDefaultSectionCollapsed] = useState(false);
-
-  const ITEMS_PER_PAGE = 20;
-
-  // Load data on mount
   useEffect(() => {
-    loadDefaultProducts();
-    loadCustomItems();
-    loadNotInterestedItems();
-  }, []);
+    if (activeTab === 'my-list') {
+      fetchActiveList();
+    } else {
+      fetchCatalog();
+    }
+  }, [activeTab, page, categoryFilter, search, showDisabledOnly]);
 
-  const loadDefaultProducts = async () => {
+  const fetchActiveList = async () => {
     try {
-      const response = await fetch('/api/watchlist/default-products', {
-        credentials: 'include'
+      setLoading(true);
+      const params = new URLSearchParams({
+        page,
+        limit: 50,
+        ...(categoryFilter !== 'all' && { category: categoryFilter }),
+        ...(search && { search })
       });
-      if (response.ok) {
-        const data = await response.json();
-        setDefaultProducts(data.data || []);
-      }
-    } catch (err) {
-      console.error('Error loading default products:', err);
-      setError('Failed to load default products');
+      const response = await apiFetch(`/api/watchlist?${params}`);
+      const data = await response.json();
+      setActiveList(data.data || []);
+      setPagination(data.pagination || null);
+    } catch (error) {
+      console.error('Error fetching active watchlist:', error);
+      showMessage('Failed to load watchlist', 'error');
     } finally {
-      setDefaultLoading(false);
+      setLoading(false);
     }
   };
 
-  const loadNotInterestedItems = async () => {
+  const fetchCatalog = async () => {
     try {
-      const response = await fetch('/api/watchlist/user-preferences', {
-        credentials: 'include'
+      setLoading(true);
+      const params = new URLSearchParams({
+        page,
+        limit: 50,
+        ...(categoryFilter !== 'all' && { category: categoryFilter }),
+        ...(search && { search })
       });
-      if (response.ok) {
-        const data = await response.json();
-        const notInterested = data.data
-          .filter(item => item.interest_type === 'not_interested')
-          .map(item => item.plu);
-        setNotInterestedItems(new Set(notInterested));
-      }
-    } catch (err) {
-      console.error('Error loading user preferences:', err);
-    }
-  };
-
-  const loadCustomItems = async () => {
-    try {
-      const response = await fetch('/api/watchlist', { credentials: 'include' });
-      if (response.ok) {
-        const data = await response.json();
-        const custom = data.data.filter(item => !item.brand_name || item.custom_name);
-        setCustomItems(custom);
-      }
-    } catch (err) {
-      console.error('Error loading custom items:', err);
-      setError('Failed to load custom items');
+      const response = await apiFetch(`/api/watchlist/catalog?${params}`);
+      const data = await response.json();
+      setCatalogList(data.data || []);
+      setPagination(data.pagination || null);
+    } catch (error) {
+      console.error('Error fetching catalog:', error);
+      showMessage('Failed to load catalog', 'error');
     } finally {
-      setCustomLoading(false);
+      setLoading(false);
     }
   };
 
-  // Search functionality
-  const handleSearch = async () => {
-    if (searchTerm.length < 2) {
-      setError('Please enter at least 2 characters to search');
+  const showMessage = (text, type = 'success') => {
+    setMessage({ text, type });
+    setTimeout(() => setMessage(null), 5000);
+  };
+
+  const handleToggle = async (plu, currentIsWatching, isCustom) => {
+    if (isCustom) {
+      showMessage('Custom items cannot be toggled. Use "Remove" to delete.', 'warning');
       return;
     }
 
-    setIsSearching(true);
-    setError('');
-
     try {
-      const response = await fetch(`/api/watchlist/search/products?q=${encodeURIComponent(searchTerm)}`, {
-        credentials: 'include',
-        headers: { 'X-Requested-With': 'XMLHttpRequest' }
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        setSearchResults(data.data || []);
-        setShowSearchResults(true);
-
-        if (data.data && data.data.length === 0) {
-          setError('No products found matching your search');
-        }
-      } else {
-        setError('Failed to search products');
-      }
-    } catch (err) {
-      console.error('Search error:', err);
-      setError('Failed to search products');
-    } finally {
-      setIsSearching(false);
-    }
-  };
-
-  const clearSearch = () => {
-    setSearchTerm('');
-    setSearchResults([]);
-    setShowSearchResults(false);
-    setError('');
-  };
-
-  const handleAddFromSearch = async (product) => {
-    try {
+      const newInterest = currentIsWatching ? 'not_interested' : 'interested';
       const response = await apiFetch('/api/watchlist', {
         method: 'POST',
-        body: JSON.stringify({
-          plu: product.plu,
-          interest_type: 'interested'
-        })
+        body: JSON.stringify({ plu, interest_type: newInterest })
       });
 
-      if (response.ok) {
-        const data = await response.json();
-        const newItem = {
-          watch_id: data.watchId || data.data?.watch_id,
-          plu: product.plu,
-          custom_name: null,
-          active: true,
-          brand_name: product.brand_name,
-          retail_price: product.retail_price,
-          alcohol_type: product.alcohol_type
-        };
-        setCustomItems(prev => [newItem, ...prev]);
-        clearSearch();
-      } else {
-        const errorData = await response.json();
-        setError(errorData.message || 'Failed to add item');
+      if (!response.ok) {
+        throw new Error('Failed to toggle item');
       }
-    } catch (err) {
-      console.error('Error adding from search:', err);
-      setError('Failed to add item to watchlist');
+
+      showMessage(
+        currentIsWatching
+          ? 'Item removed from My List (visible in Browse Catalog)'
+          : 'Item added to My List',
+        'success'
+      );
+
+      // Refresh current view
+      if (activeTab === 'my-list') {
+        fetchActiveList();
+      } else {
+        fetchCatalog();
+      }
+    } catch (error) {
+      console.error('Error toggling item:', error);
+      showMessage('Failed to toggle item', 'error');
     }
   };
 
-  // Default products functionality
-  const handleDefaultToggle = async (plu, isCurrentlyTracked) => {
-    try {
-      if (isCurrentlyTracked) {
-        // Mark as not interested
-        const response = await apiFetch('/api/watchlist', {
-          method: 'POST',
-          body: JSON.stringify({
-            plu,
-            interest_type: 'not_interested'
-          })
-        });
-
-        if (response.ok) {
-          setNotInterestedItems(prev => new Set([...prev, plu]));
-        }
-      } else {
-        // Remove not interested entry
-        const prefsResponse = await fetch('/api/watchlist/user-preferences', {
-          credentials: 'include',
-          headers: { 'X-Requested-With': 'XMLHttpRequest' }
-        });
-
-        if (prefsResponse.ok) {
-          const prefsData = await prefsResponse.json();
-          const notInterestedEntry = prefsData.data.find(
-            item => item.plu === plu && item.interest_type === 'not_interested'
-          );
-
-          if (notInterestedEntry) {
-            const deleteResponse = await apiFetch(`/api/watchlist/${notInterestedEntry.watch_id}`, {
-              method: 'DELETE'
-            });
-
-            if (deleteResponse.ok) {
-              setNotInterestedItems(prev => {
-                const newSet = new Set(prev);
-                newSet.delete(plu);
-                return newSet;
-              });
-            }
-          }
-        }
-      }
-    } catch (err) {
-      console.error('Error toggling default item:', err);
-      setError('Failed to update item');
-    }
-  };
-
-  // Custom items functionality
-  const handleAddCustom = async (e) => {
-    e.preventDefault();
-    setError('');
-
-    // Validate required fields
-    if (!newItem.plu || !newItem.custom_name) {
-      setError('PLU and Product Name are required');
+  const handleRemove = async (watchId) => {
+    if (!confirm('Remove this item from your watchlist?')) {
       return;
     }
 
-    // Clean PLU input (remove any non-digits)
-    const cleanPlu = newItem.plu.replace(/\D/g, '');
-
-    // Validate PLU format (5 digits)
-    if (cleanPlu.length !== 5) {
-      setError('PLU must be exactly 5 digits (e.g., 99999)');
-      return;
-    }
-
-    // Validate price if provided
-    if (newItem.retail_price && (isNaN(newItem.retail_price) || parseFloat(newItem.retail_price) < 0)) {
-      setError('Retail price must be a valid number greater than or equal to 0');
-      return;
-    }
-
-    // Validate bottles per case if provided
-    if (newItem.bottles_per_case && (isNaN(newItem.bottles_per_case) || parseInt(newItem.bottles_per_case) < 1 || parseInt(newItem.bottles_per_case) > 24)) {
-      setError('Bottles per case must be a number between 1 and 24');
-      return;
-    }
-
-    // Check if PLU already exists in alcohol table
-    try {
-      const checkResponse = await fetch(`/api/inventory/search/${cleanPlu}`, {
-        method: 'GET',
-        credentials: 'include'
-      });
-
-      if (checkResponse.ok) {
-        const searchData = await checkResponse.json();
-        if (searchData.products && searchData.products.length > 0) {
-          const existingProduct = searchData.products[0];
-          setError(`PLU ${cleanPlu} already exists in the database as "${existingProduct.brand_name}". Please use the search function above to add this existing product, or choose a different PLU for your custom entry.`);
-          return;
-        }
-      }
-    } catch (err) {
-      console.warn('Could not check for existing PLU:', err);
-      // Continue with creation if check fails
-    }
-
-    try {
-      // Prepare the payload with all fields
-      const payload = {
-        plu: parseInt(cleanPlu),
-        custom_name: newItem.custom_name.trim(),
-        interest_type: 'interested'
-      };
-
-      // Add optional fields if they have values
-      if (newItem.retail_price && newItem.retail_price !== '') {
-        payload.retail_price = parseFloat(newItem.retail_price);
-      }
-
-      if (newItem.bottles_per_case && newItem.bottles_per_case !== '') {
-        payload.bottles_per_case = parseInt(newItem.bottles_per_case);
-      }
-
-      const response = await apiFetch('/api/watchlist', {
-        method: 'POST',
-        body: JSON.stringify(payload)
-      });
-
-      if (response.ok) {
-        await loadCustomItems();
-        setNewItem({
-          plu: '',
-          custom_name: '',
-          retail_price: '',
-          bottles_per_case: ''
-        });
-        setShowAddForm(false);
-        setError('');
-      } else {
-        const errorData = await response.json();
-        setError(errorData.message || 'Failed to add custom item');
-      }
-    } catch (err) {
-      console.error('Error adding custom item:', err);
-      setError('Failed to add custom item');
-    }
-  };
-
-  const handleCustomToggle = async (item) => {
-    try {
-      const response = await apiFetch(`/api/watchlist/${item.watch_id}`, {
-        method: 'PATCH',
-        body: JSON.stringify({ active: !item.active })
-      });
-
-      if (response.ok) {
-        setCustomItems(prev => prev.map(i =>
-          i.watch_id === item.watch_id
-            ? { ...i, active: !i.active }
-            : i
-        ));
-      } else {
-        const errorData = await response.json();
-        setError(errorData.message || 'Failed to update item');
-      }
-    } catch (err) {
-      console.error('Error toggling custom item:', err);
-      setError('Failed to update item');
-    }
-  };
-
-  const handleRemoveCustom = async (watchId) => {
     try {
       const response = await apiFetch(`/api/watchlist/${watchId}`, {
         method: 'DELETE'
       });
 
-      if (response.ok) {
-        setCustomItems(prev => prev.filter(item => item.watch_id !== watchId));
+      if (!response.ok) {
+        throw new Error('Failed to remove item');
       }
-    } catch (err) {
-      console.error('Error removing custom item:', err);
-      setError('Failed to remove item');
+
+      showMessage('Item removed from watchlist', 'success');
+
+      if (activeTab === 'my-list') {
+        fetchActiveList();
+      } else {
+        fetchCatalog();
+      }
+    } catch (error) {
+      console.error('Error removing item:', error);
+      showMessage('Failed to remove item', 'error');
     }
   };
 
-  // Filter and pagination logic
-  const filteredDefaultProducts = defaultProducts.filter(item => {
-    const listingTypeKey = (item.listing_type_key || item.listing_type || '').toLowerCase();
-    const filterMatches = selectedFilter === 'all' ? true : listingTypeKey === selectedFilter;
-
-    let searchMatch = true;
-    if (watchlistSearchTerm.trim()) {
-      const searchLower = watchlistSearchTerm.trim().toLowerCase();
-      const pluMatch = item.plu?.toString().includes(searchLower);
-      const nameMatch = (item.brand_name || '').toLowerCase().includes(searchLower);
-      searchMatch = pluMatch || nameMatch;
+  const handleAddCustom = async () => {
+    if (!customPLU || !customName) {
+      showMessage('Please enter both PLU and name', 'warning');
+      return;
     }
 
-    return filterMatches && searchMatch;
-  });
+    const pluNum = parseInt(customPLU);
+    if (isNaN(pluNum) || pluNum < 10000 || pluNum > 99999) {
+      showMessage('PLU must be a 5-digit number (10000-99999)', 'error');
+      return;
+    }
 
-  const totalPages = Math.ceil(filteredDefaultProducts.length / ITEMS_PER_PAGE);
-  const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
-  const paginatedProducts = filteredDefaultProducts.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+    try {
+      const response = await apiFetch('/api/watchlist', {
+        method: 'POST',
+        body: JSON.stringify({
+          plu: pluNum,
+          custom_name: customName,
+          interest_type: 'interested'
+        })
+      });
 
-  const filters = [
-    { key: 'all', label: 'All Products' },
-    { key: 'limited', label: 'Limited' },
-    { key: 'allocation', label: 'Allocation' },
-    { key: 'premium', label: 'Premium' },
-    { key: 'barrel', label: 'Barrel' }
-  ];
+      const data = await response.json();
 
-  if (defaultLoading || customLoading) {
-    return (
-      <div className="watchlist-page">
-        <div className="loading-container">
-          <div className="loading-spinner"></div>
-          <p>Loading your watchlist...</p>
-        </div>
-      </div>
-    );
+      if (data.success) {
+        showMessage(data.data.message, 'success');
+        setCustomPLU('');
+        setCustomName('');
+        if (activeTab === 'my-list') {
+          fetchActiveList();
+        } else {
+          fetchCatalog();
+        }
+      } else {
+        showMessage(data.message || 'Failed to add custom item', 'error');
+      }
+    } catch (error) {
+      console.error('Error adding custom PLU:', error);
+      showMessage(error.message || 'Failed to add custom item', 'error');
+    }
+  };
+
+  const handleBulkToggleOff = async () => {
+    if (!confirm('Turn off all default items? They will disappear from "My List" but remain in "Browse Catalog" where you can turn them back on.')) {
+      return;
+    }
+
+    try {
+      const defaultPLUs = activeList
+        .filter(item => item.source === 'default')
+        .map(item => item.plu);
+
+      if (defaultPLUs.length === 0) {
+        showMessage('No default items to toggle off', 'warning');
+        return;
+      }
+
+      const response = await apiFetch('/api/watchlist/bulk/toggle', {
+        method: 'POST',
+        body: JSON.stringify({
+          plu_list: defaultPLUs,
+          interest_type: 'not_interested'
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to bulk toggle');
+      }
+
+      showMessage(`Toggled off ${defaultPLUs.length} default items`, 'success');
+      fetchActiveList();
+    } catch (error) {
+      console.error('Error bulk toggling:', error);
+      showMessage('Failed to bulk toggle', 'error');
+    }
+  };
+
+  // Filter catalog list by disabled status if needed
+  let displayList = activeTab === 'my-list' ? (activeList || []) : (catalogList || []);
+
+  if (activeTab === 'catalog' && showDisabledOnly) {
+    displayList = displayList.filter(item => !item.is_watching);
   }
 
-  return (
-    <div className="watchlist-page">
-      <div className="page-header">
-        <h1>My Watchlist</h1>
-        <p>Track your favorite products and manage custom items</p>
+  const currentList = displayList;
+
+  // Render pagination controls
+  const renderPagination = () => {
+    if (!pagination || pagination.totalPages <= 1) return null;
+
+    return (
+      <div className="pagination">
+        <button
+          disabled={page === 1}
+          onClick={() => setPage(page - 1)}
+        >
+          ← Previous
+        </button>
+        <span>Page {page} of {pagination.totalPages}</span>
+        <button
+          disabled={page >= pagination.totalPages}
+          onClick={() => setPage(page + 1)}
+        >
+          Next →
+        </button>
       </div>
+    );
+  };
 
-      {error && (
-        <div className="error-message">
-          <span>{error}</span>
-          <button onClick={() => setError('')} className="error-close">X</button>
+  // Render product list (shared between My List and Browse Catalog)
+  const renderProductList = () => {
+    if (loading) {
+      return (
+        <div className="loading">
+          <div className="spinner"></div>
+          <p>Loading...</p>
         </div>
-      )}
+      );
+    }
 
-
-      {/* Default Products Section */}
-      <section className="default-section">
-        <div className="section-header">
-          <div className="section-title">
-            <h2>Default Watchlist</h2>
-            <p>Premium and allocated products tracked by default</p>
-          </div>
-          <button
-            className="collapse-btn"
-            onClick={() => setIsDefaultSectionCollapsed(!isDefaultSectionCollapsed)}
-            title={isDefaultSectionCollapsed ? "+" : "-"}
-          >
-            {isDefaultSectionCollapsed ? "+" : "-"}
-          </button>
-        </div>
-
-        {!isDefaultSectionCollapsed && (
-          <div className="default-section-content">
-            <div className="filter-controls">
-          {filters.map((filter) => (
-            <button
-              key={filter.key}
-              className={`filter-btn ${selectedFilter === filter.key ? 'active' : ''}`}
-              onClick={() => {
-                setSelectedFilter(filter.key);
-                setCurrentPage(1);
-              }}
-            >
-              {filter.label}
-            </button>
-          ))}
-        </div>
-
-        {/* Watchlist Search */}
-        <div className="watchlist-search">
-          <input
-            type="text"
-            placeholder="Search watchlist by PLU or product name..."
-            value={watchlistSearchTerm}
-            onChange={(e) => {
-              setWatchlistSearchTerm(e.target.value);
-              setCurrentPage(1); // Reset to first page when searching
-            }}
-            className="watchlist-search-input"
-          />
-          {watchlistSearchTerm && (
-            <button
-              className="clear-watchlist-search"
-              onClick={() => {
-                setWatchlistSearchTerm('');
-                setCurrentPage(1);
-              }}
-              title="Clear search"
-            >
-              X
-            </button>
+    if (currentList.length === 0) {
+      return (
+        <div className="empty-state">
+          {activeTab === 'my-list' ? (
+            <>
+              <h3>Your watchlist is empty</h3>
+              <p>Add custom items below or browse the catalog to start watching products.</p>
+            </>
+          ) : (
+            <>
+              <h3>No products found</h3>
+              <p>Try adjusting your search or filters.</p>
+            </>
           )}
         </div>
+      );
+    }
 
-        <div className="pagination-controls">
-          <button
-            className="pagination-btn"
-            onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-            disabled={currentPage === 1}
-          >
-            Previous
-          </button>
-          <div className="pagination-info">
-            Page {currentPage} of {totalPages} ({filteredDefaultProducts.length} items)
-          </div>
-          <button
-            className="pagination-btn"
-            onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-            disabled={currentPage === totalPages}
-          >
-            Next
-          </button>
-        </div>
+    return (
+      <>
+        <div className="product-list">
+          {currentList.map((item) => (
+            <div key={item.plu} className={`mobile-product-card ${!item.is_watching ? 'toggled-off' : ''}`}>
+              {/* Left: Image */}
+              <div className="mobile-image-section">
+                <ProductImage product={item} />
+              </div>
 
-        <div className="mobile-card-layout">
-          {paginatedProducts.map((item) => {
-            const isTracked = !notInterestedItems.has(item.plu);
-            const listingTypeKey = (item.listing_type_key || item.listing_type || 'unknown').toLowerCase();
-            const listingLabel = item.listing_type || 'N/A';
-            return (
-              <div key={item.plu} className="mobile-product-card">
-                {/* Left: Image */}
-                <div className="mobile-image-section">
-                  <WatchlistProductImage item={item} />
-                </div>
-
-                {/* Center: Top (2/3) with name + meta, Divider, Bottom (1/3) with bottles per case and size */}
-                <div className="mobile-content-section split-layout">
-                  <div className="content-top">
-                    <div className="mobile-product-name">
-                      {item.brand_name}
-                    </div>
-                    <div className="mobile-meta-row">
-                      <span
-                        className={`listing-type-badge ${listingTypeKey}`}
-                        title={listingLabel}
-                      >
-                        {listingLabel}
-                      </span>
-                      <span className="mobile-product-plu">
-                        PLU: {item.plu}
-                      </span>
-                      <span className="mobile-product-price">
-                        {item.retail_price ? `$${item.retail_price}` : 'N/A'}
-                      </span>
-                    </div>
+              {/* Center: Product info */}
+              <div className="mobile-content-section split-layout">
+                <div className="content-top">
+                  <div className="mobile-product-name">
+                    {item.brand_name || 'Unknown Product'}
                   </div>
-
-                  <div className="soft-divider" aria-hidden="true"></div>
-
-                  <div className="content-bottom">
-                    <div className="mobile-peak-low">
-                      <div className="stat-row">
-                        <span className="mobile-stat-label">Size:</span>
-                        <span className="mobile-stat-value">
-                          {item.size_ml ? `${item.size_ml} ml` : (item.size || 'N/A')}
-                        </span>
-                      </div>
-                      <div className="stat-row">
-                        <span className="mobile-stat-label">Bottles/Case:</span>
-                        <span className="mobile-stat-value">
-                          {item.bottles_per_case || 'N/A'}
-                        </span>
-                      </div>
-                    </div>
+                  <div className="mobile-meta-row">
+                    <span
+                      className={`listing-type-badge ${item.source === 'custom' ? 'custom' : (item.listing_type_key || 'unknown')}`}
+                      title={item.source === 'custom' ? 'Custom' : (item.listing_type || 'N/A')}
+                    >
+                      {item.source === 'custom' ? 'Custom' : (item.listing_type || 'N/A')}
+                    </span>
+                    <span className="mobile-product-plu">
+                      PLU: {item.plu}
+                    </span>
+                    <span className="mobile-product-price">
+                      {item.retail_price ? `$${item.retail_price}` : 'N/A'}
+                    </span>
                   </div>
                 </div>
 
-                {/* Right: Toggle instead of Current inventory */}
-                <div className="mobile-current-section">
-                  <div className="mobile-toggle-container">
-                    <BourbonBarrelToggle
-                      isOn={isTracked}
-                      onChange={() => handleDefaultToggle(item.plu, isTracked)}
-                      size="medium"
-                    />
-                  </div>
+                <div className="soft-divider" aria-hidden="true"></div>
+
+                <div className="content-bottom">
+                  {item.bottles_per_case && (
+                    <div className="mobile-bottles-per-case">
+                      Bottles Per Case: {item.bottles_per_case}
+                    </div>
+                  )}
+                  {item.size_ml && (
+                    <div className="mobile-size-info">
+                      Size: {item.size_ml}ml
+                    </div>
+                  )}
                 </div>
               </div>
-            );
-          })}
-        </div>
-          </div>
-        )}
-      </section>
 
-      {/* Custom Items Section */}
-      <section className="custom-section">
-        <div className="section-header">
-          <h2>Custom Items</h2>
-          <button
-            className="add-custom-btn"
-            onClick={() => setShowAddForm(!showAddForm)}
-          >
-            {showAddForm ? 'Cancel' : 'Add Custom Item'}
-          </button>
-        </div>
-
-        {showAddForm && (
-          <div className="add-custom-form">
-            {/* Search Existing Products */}
-            <div className="search-container">
-              <h4>Search Existing Products</h4>
-              <div className="search-input-group">
-                <input
-                  type="text"
-                  placeholder="Search by product name or PLU..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
-                  className="search-input"
-                />
-                <button
-                  className="search-btn"
-                  onClick={handleSearch}
-                  disabled={isSearching || searchTerm.length < 2}
-                >
-                  {isSearching ? 'Working...' : 'Search'}
-                </button>
-                {searchTerm && (
-                  <button className="clear-btn" onClick={clearSearch}>
-                    X
+              {/* Right: Toggle or Remove */}
+              <div className="mobile-toggle-section">
+                {item.can_toggle !== false ? (
+                  <BourbonBarrelToggle
+                    isOn={item.is_watching}
+                    onChange={() => handleToggle(item.plu, item.is_watching, item.source === 'custom')}
+                    size="medium"
+                  />
+                ) : (
+                  <button
+                    className="remove-btn"
+                    onClick={() => handleRemove(item.watch_id)}
+                    title="Remove custom item"
+                  >
+                    Remove
                   </button>
                 )}
               </div>
-
-              {showSearchResults && (
-                <div className="search-results">
-                  <div className="search-results-header">
-                    <h5>Search Results ({searchResults.length})</h5>
-                    <button className="close-results-btn" onClick={() => setShowSearchResults(false)}>
-                      X
-                    </button>
-                  </div>
-                  <div className="search-results-list">
-                    {searchResults.length > 0 ? (
-                      searchResults.map((product, index) => (
-                        <div key={product.plu || index} className="search-result-item">
-                          <div className="search-item-info">
-                            <h6>{product.brand_name || 'Unknown Product'}</h6>
-                            <div className="search-item-details">
-                              <span className="plu">PLU: {product.plu}</span>
-                              {product.retail_price && (
-                                <span className="price">${product.retail_price}</span>
-                              )}
-                              {product.alcohol_type && (
-                                <span className="type">{product.alcohol_type}</span>
-                              )}
-                            </div>
-                          </div>
-                          <button
-                            className="add-btn"
-                            onClick={() => handleAddFromSearch(product)}
-                          >
-                            Add to Watchlist
-                          </button>
-                        </div>
-                      ))
-                    ) : (
-                      <div className="no-results">
-                        <p>No products found matching "{searchTerm}"</p>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              )}
             </div>
+          ))}
+        </div>
 
-            {/* Manual Entry */}
-            <div className="manual-entry-container">
-              <h4>Or Create Custom Entry</h4>
-              <p className="form-instructions">
-                Create a custom entry for products not found in our database.
-                PLU must be exactly 5 digits. Only PLU and Product Name are required.
-              </p>
-              <form onSubmit={handleAddCustom}>
-                <div className="form-row">
-                  <div className="form-field">
-                    <label htmlFor="customPlu">PLU * <span className="field-hint">(5 digits)</span></label>
-                    <input
-                      id="customPlu"
-                      type="text"
-                      placeholder="99999"
-                      value={newItem.plu}
-                      onChange={(e) => setNewItem({ ...newItem, plu: e.target.value })}
-                      maxLength="5"
-                      required
-                    />
-                    <small className="field-description">
-                      Product Lookup Number - must be exactly 5 digits
-                    </small>
-                  </div>
-                  <div className="form-field">
-                    <label htmlFor="customName">Product Name *</label>
-                    <input
-                      id="customName"
-                      type="text"
-                      placeholder="My Custom Bourbon"
-                      value={newItem.custom_name}
-                      onChange={(e) => setNewItem({ ...newItem, custom_name: e.target.value })}
-                      maxLength="100"
-                      required
-                    />
-                    <small className="field-description">
-                      Enter a descriptive name for this product
-                    </small>
-                  </div>
-                </div>
-
-                <div className="form-row">
-                  <div className="form-field">
-                    <label htmlFor="customPrice">Retail Price <span className="optional-label">(optional)</span></label>
-                    <input
-                      id="customPrice"
-                      type="number"
-                      step="0.01"
-                      min="0"
-                      placeholder="29.95"
-                      value={newItem.retail_price}
-                      onChange={(e) => setNewItem({ ...newItem, retail_price: e.target.value })}
-                    />
-                    <small className="field-description">
-                      Price in dollars (e.g., 29.95)
-                    </small>
-                  </div>
-                  <div className="form-field">
-                    <label htmlFor="customBottles">Bottles per Case <span className="optional-label">(optional)</span></label>
-                    <input
-                      id="customBottles"
-                      type="number"
-                      min="1"
-                      max="24"
-                      placeholder="12"
-                      value={newItem.bottles_per_case}
-                      onChange={(e) => setNewItem({ ...newItem, bottles_per_case: e.target.value })}
-                    />
-                    <small className="field-description">
-                      How many bottles come in a case (usually 6, 12, or 24)
-                    </small>
-                  </div>
-                </div>
-
-                <button type="submit" className="submit-btn">
-                  Add Custom Item
-                </button>
-              </form>
-            </div>
+        {/* Bulk Actions at bottom - Only on My List tab */}
+        {activeTab === 'my-list' && currentList.filter(item => item.source === 'default').length > 0 && (
+          <div className="bulk-actions-bottom">
+            <button onClick={handleBulkToggleOff} className="bulk-disable-btn">
+              Disable All on Page
+            </button>
           </div>
         )}
+      </>
+    );
+  };
 
-        <div className="mobile-card-layout">
-          {customItems.length > 0 ? (
-            customItems.map((item) => (
-              <div key={item.watch_id} className="mobile-product-card">
-                {/* Left: No image for custom items, show custom icon */}
-                <div className="mobile-image-section">
-                  <div className="product-image-container">
-                    <div className="product-image-placeholder custom-placeholder">
-                      📝
-                    </div>
-                  </div>
+  return (
+    <div className="watchlist-page">
+      <h1>My Watchlist</h1>
+
+      {/* Message Display */}
+      {message && (
+        <div className={`message ${message.type}`}>
+          {message.text}
+        </div>
+      )}
+
+      {/* Tabs */}
+      <div className="tabs">
+        <button 
+          className={activeTab === 'my-list' ? 'active' : ''}
+          onClick={() => { setActiveTab('my-list'); setPage(1); }}
+        >
+          My List {pagination && activeTab === 'my-list' && `(${pagination.total})`}
+        </button>
+        <button 
+          className={activeTab === 'catalog' ? 'active' : ''}
+          onClick={() => { setActiveTab('catalog'); setPage(1); }}
+        >
+          Browse Catalog {pagination && activeTab === 'catalog' && `(${pagination.total})`}
+        </button>
+      </div>
+
+      {/* Tab Description */}
+      <div className="tab-description">
+        {activeTab === 'my-list' ? (
+          <p>
+            <strong>Your active watchlist.</strong> Only items you're watching appear here. 
+            Toggled-off items don't show up (but you can turn them back on in "Browse Catalog").
+          </p>
+        ) : (
+          <p>
+            <strong>All 200+ premium products.</strong> Browse and toggle items on/off. 
+            Items you've turned off are still visible here with the toggle switch off.
+          </p>
+        )}
+      </div>
+
+      {/* My List Tab: Collapsible Sections */}
+      {activeTab === 'my-list' ? (
+        <>
+          {/* Pagination at top */}
+          {renderPagination()}
+
+          {/* Section 1: Product List (expanded by default) */}
+          <div className="collapsible-section">
+            <button
+              className="section-header"
+              onClick={() => setListExpanded(!listExpanded)}
+            >
+              <span className="section-title">My Watchlist Items</span>
+              <span className="section-toggle">{listExpanded ? '−' : '+'}</span>
+            </button>
+
+            {listExpanded && (
+              <div className="section-content">
+                {/* Filters */}
+                <div className="filters">
+                  <input
+                    type="text"
+                    placeholder="Search products..."
+                    value={search}
+                    onChange={(e) => { setSearch(e.target.value); setPage(1); }}
+                  />
+                  <select
+                    value={categoryFilter}
+                    onChange={(e) => { setCategoryFilter(e.target.value); setPage(1); }}
+                  >
+                    <option value="all">All Categories</option>
+                    <option value="Allocation">Allocation</option>
+                    <option value="Limited">Limited</option>
+                    <option value="Barrel">Barrel</option>
+                    <option value="Custom">Custom</option>
+                  </select>
                 </div>
 
-                {/* Center: Top (2/3) with name + meta, Divider, Bottom (1/3) with bottles per case and size */}
-                <div className="mobile-content-section split-layout">
-                  <div className="content-top">
-                    <div className="mobile-product-name">
-                      {item.custom_name || item.brand_name}
-                    </div>
-                    <div className="mobile-meta-row">
-                      <span className="listing-type-badge custom">
-                        Custom
-                      </span>
-                      <span className="mobile-product-plu">
-                        PLU: {item.plu}
-                      </span>
-                      <span className="mobile-product-price">
-                        {item.retail_price ? `$${item.retail_price}` : 'N/A'}
-                      </span>
-                    </div>
-                  </div>
+                {/* Product List */}
+                {renderProductList()}
+              </div>
+            )}
+          </div>
 
-                  <div className="soft-divider" aria-hidden="true"></div>
+          {/* Section 2: Add Custom Item (collapsed by default) */}
+          <div className="collapsible-section">
+            <button
+              className="section-header"
+              onClick={() => setAddExpanded(!addExpanded)}
+            >
+              <span className="section-title">Add Custom Item by PLU</span>
+              <span className="section-toggle">{addExpanded ? '−' : '+'}</span>
+            </button>
 
-                  <div className="content-bottom">
-                    <div className="mobile-peak-low">
-                      <div className="stat-row">
-                        <span className="mobile-stat-label">Size:</span>
-                        <span className="mobile-stat-value">
-                          {item.size_ml ? `${item.size_ml} ml` : (item.size || 'N/A')}
-                        </span>
-                      </div>
-                      <div className="stat-row">
-                        <span className="mobile-stat-label">Bottles/Case:</span>
-                        <span className="mobile-stat-value">
-                          {item.bottles_per_case || 'N/A'}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Right: Toggle and Remove button */}
-                <div className="mobile-current-section">
-                  <div className="mobile-toggle-container custom-actions">
-                    <BourbonBarrelToggle
-                      isOn={item.active}
-                      onChange={() => handleCustomToggle(item)}
-                      size="medium"
+            {addExpanded && (
+              <div className="section-content">
+                <div className="add-custom">
+                  <div className="custom-inputs">
+                    <input
+                      type="number"
+                      placeholder="PLU (e.g., 12345)"
+                      value={customPLU}
+                      onChange={(e) => setCustomPLU(e.target.value)}
+                      min="10000"
+                      max="99999"
                     />
-                    <button
-                      className="remove-btn"
-                      onClick={() => handleRemoveCustom(item.watch_id)}
-                      title="Remove from watchlist"
-                    >
-                      X
-                    </button>
+                    <input
+                      type="text"
+                      placeholder="Product Name"
+                      value={customName}
+                      onChange={(e) => setCustomName(e.target.value)}
+                      maxLength="100"
+                    />
+                    <button onClick={handleAddCustom}>Add</button>
                   </div>
+                  <p className="help-text">
+                    Can't find a product? Enter its PLU number from the NC ABC website.
+                  </p>
                 </div>
               </div>
-            ))
-          ) : (
-            <div className="no-custom-items">
-              <p>No custom items yet. Add some using the search above or create a custom entry.</p>
-            </div>
-          )}
-        </div>
-      </section>
+            )}
+          </div>
+
+          {/* Pagination at bottom for My List */}
+          {renderPagination()}
+        </>
+      ) : (
+        <>
+          {/* Browse Catalog Tab: No collapsible sections */}
+          {/* Filters */}
+          <div className="filters">
+            <input
+              type="text"
+              placeholder="Search products..."
+              value={search}
+              onChange={(e) => { setSearch(e.target.value); setPage(1); }}
+            />
+            <select
+              value={categoryFilter}
+              onChange={(e) => { setCategoryFilter(e.target.value); setPage(1); }}
+            >
+              <option value="all">All Categories</option>
+              <option value="Allocation">Allocation</option>
+              <option value="Limited">Limited</option>
+              <option value="Barrel">Barrel</option>
+            </select>
+            <label className="disabled-filter">
+              <input
+                type="checkbox"
+                checked={showDisabledOnly}
+                onChange={(e) => { setShowDisabledOnly(e.target.checked); setPage(1); }}
+              />
+              <span>Show disabled only</span>
+            </label>
+          </div>
+
+          {/* Product List */}
+          {renderProductList()}
+
+          {/* Pagination at bottom for Browse Catalog */}
+          {renderPagination()}
+        </>
+      )}
     </div>
   );
-};
-
-export default WatchlistPage;
+}
